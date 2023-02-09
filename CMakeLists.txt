@@ -12,19 +12,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3")
 project(Waves2AMR)
 
 # Target names
-set(exe_name "Waves2AMR_test")
-set(exe_utest_name "${exe_name}_unit_tests")
-set(exe_lib "w2a_obj")
+set(exe_base "Waves2AMR")
+set(exe_name "${exe_base}_test")
+set(exe_utest_name "${exe_base}_unit_tests")
 
-# Main executable (for now)
-add_executable(${exe_name} tests/main.cpp src/read_ascii.cpp)
-# Communicate source directory to code
-target_compile_definitions(${exe_name} PRIVATE src_dir="${CMAKE_SOURCE_DIR}")
-# Make object files accessible (for sake of gtest code)
-#add_library(${exe_lib} OBJECT main.cpp read_modes.cpp read_ascii.cpp)
-#target_compile_definitions(${exe_lib} PRIVATE src_dir="${CMAKE_SOURCE_DIR}")
+# Main executable (for testing compilation and running)
+add_executable(${exe_name} tests/main.cpp)
 
-option(ENABLE_UNIT_TESTS "Enable unit testing" OFF)
+option(ENABLE_UNIT_TESTS "Enable unit testing" ON)
 
 if(ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
