@@ -7,15 +7,26 @@ ReadModes::ReadModes(std::string filename) : m_filename(filename) {
   ascii_initialize();
 }
 
-void ReadModes::read_data(double time) {
-  // Read (TODO: according to file type)
-  ascii_read(time);
+int ReadModes::time2step(double time) {
+  // Look for same time or after
+  if (itime_now / f_out < time) {
+    ++itime_now;
+  } else if ((itime_now - 1) / f_out > time) {
+    --itime_now;
+  }
+  return itime_now;
 }
 
-void ReadModes::read_data(double time, std::vector<double> &mX,
-                          std::vector<double> &mY, std::vector<double> &mZ,
-                          std::vector<double> &mT, std::vector<double> &mFS,
-                          std::vector<double> &mFST) {
+void ReadModes::read_data(double time) {
+  int itime = time2step(time);
+  // Read (TODO: according to file type)
+  ascii_read(itime);
+}
+
+void ReadModes::get_data(double time, std::vector<double> &mX,
+                         std::vector<double> &mY, std::vector<double> &mZ,
+                         std::vector<double> &mT, std::vector<double> &mFS,
+                         std::vector<double> &mFST) {
   // Read data
   read_data(time);
   // Copy data to output

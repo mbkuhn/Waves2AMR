@@ -13,19 +13,21 @@ public:
 
   void read_data(double time);
 
-  void read_data(double time, std::vector<double> &mX, std::vector<double> &mY,
-                 std::vector<double> &mZ, std::vector<double> &mT,
-                 std::vector<double> &mFS, std::vector<double> &mFST);
-
   void output_data(std::vector<double> &v1, std::vector<double> &v2,
                    std::vector<double> &v3, std::vector<double> &v4,
                    std::vector<double> &v5, std::vector<double> &v6);
 
-private:
-  // Initialize function
-  void ascii_initialize();
+  void get_data(double time, std::vector<double> &mX, std::vector<double> &mY,
+                 std::vector<double> &mZ, std::vector<double> &mT,
+                 std::vector<double> &mFS, std::vector<double> &mFST);
 
-  void ascii_read(double time);
+private:
+  // Convert time to timestep
+  int time2step(double time);
+
+  // ASCII functions
+  void ascii_initialize();
+  void ascii_read(int itime);
 
   // HOS data filename
   std::string m_filename;
@@ -37,8 +39,12 @@ private:
   // HOS data vectors
   std::vector<double> modeX, modeY, modeZ, modeT, modeFS, modeFST;
 
-  int nXo2p1Org;
+  // HOS working dimensions
+  int n1o2p1;
   int nYmode;
+
+  // Current time index
+  int itime_now{0};
 };
 
 #endif
