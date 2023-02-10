@@ -5,20 +5,20 @@
 namespace {
 
 std::array<double, 6> ModeSum(double time, double initval) {
-    std::string fname = "../tests/modes_HOS_SWENSE.dat";
+  std::string fname = "../tests/modes_HOS_SWENSE.dat";
   // Read and convert nondim quantities
   ReadModes rmodes(fname);
   // Initialize and size output variables
   int vsize = rmodes.get_vector_size();
-  std::vector <double> mX(vsize,initval);
-  std::vector <double> mY(vsize,initval);
-  std::vector <double> mZ(vsize,initval);
-  std::vector <double> mT(vsize,initval);
-  std::vector <double> mFS(vsize,initval);
-  std::vector <double> mFST(vsize,initval);
+  std::vector<double> mX(vsize, initval);
+  std::vector<double> mY(vsize, initval);
+  std::vector<double> mZ(vsize, initval);
+  std::vector<double> mT(vsize, initval);
+  std::vector<double> mFS(vsize, initval);
+  std::vector<double> mFST(vsize, initval);
 
   // Mode quantities are set to 0 at t = 0
-  rmodes.get_data(0.0, mX,mY,mZ,mT,mFS,mFST);
+  rmodes.get_data(time, mX, mY, mZ, mT, mFS, mFST);
 
   // Get sum of vectors
   double mX_sum = 0;
@@ -36,7 +36,8 @@ std::array<double, 6> ModeSum(double time, double initval) {
     mFST_sum += std::abs(mFST[i]);
   }
 
-  return std::array<double, 6> {mX_sum, mY_sum, mZ_sum, mT_sum, mFS_sum, mFST_sum};
+  return std::array<double, 6>{mX_sum, mY_sum,  mZ_sum,
+                               mT_sum, mFS_sum, mFST_sum};
 }
 
 class AsciiReadTest : public testing::Test {};
@@ -49,7 +50,7 @@ TEST_F(AsciiReadTest, Init) {
 
   EXPECT_EQ(rmodes.get_n1(), 64);
   EXPECT_EQ(rmodes.get_n2(), 64);
-  EXPECT_EQ(rmodes.get_f(), 1.0/6.2831853072E+01);
+  EXPECT_EQ(rmodes.get_f(), 1.0 / 6.2831853072E+01);
   EXPECT_EQ(rmodes.get_Tstop(), 6.2831853072E+01);
   EXPECT_EQ(rmodes.get_xlen(), 1.2566370614E+02);
   EXPECT_EQ(rmodes.get_ylen(), 1.2566370614E+02);
@@ -84,7 +85,6 @@ TEST_F(AsciiReadTest, Modes0) {
   EXPECT_EQ(sums[3], 0.0);
   EXPECT_EQ(sums[4], 0.0);
   EXPECT_EQ(sums[5], 0.0);
-
 }
 
 TEST_F(AsciiReadTest, Modes1) {
@@ -98,6 +98,5 @@ TEST_F(AsciiReadTest, Modes1) {
   EXPECT_GT(sums[3], 0.0);
   EXPECT_GT(sums[4], 0.0);
   EXPECT_GT(sums[5], 0.0);
-
 }
 } // namespace
