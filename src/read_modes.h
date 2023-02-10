@@ -9,6 +9,9 @@ class ReadModes {
 public:
   ReadModes(std::string, bool nondim);
 
+  ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
+            double depth_, double g_, double L_, double T_);
+
   void print_file_constants();
 
   void read_data(double time);
@@ -21,7 +24,11 @@ public:
                 std::vector<double> &mZ, std::vector<double> &mT,
                 std::vector<double> &mFS, std::vector<double> &mFST);
 
+  // Calculate size of data for each mode variable (# of complex values)
   int get_vector_size() { return vec_size; }
+
+  // Convert time to timestep
+  int time2step(double time);
 
   // Output functions for testing
   int get_n1() { return n1; }
@@ -36,9 +43,6 @@ public:
   double get_T() { return T; }
 
 private:
-  // Convert time to timestep
-  int time2step(double time);
-
   // ASCII functions
   void ascii_initialize();
   void ascii_read(int itime);
@@ -65,7 +69,8 @@ private:
   int itime_now;
 };
 
-inline ReadModes::ReadModes(std::string filename, bool nondim = false) : m_filename(filename) {
+inline ReadModes::ReadModes(std::string filename, bool nondim = false)
+    : m_filename(filename) {
   // Set time index value
   itime_now = 0;
   // TODO: Determine filetype
@@ -74,7 +79,7 @@ inline ReadModes::ReadModes(std::string filename, bool nondim = false) : m_filen
   ascii_initialize();
 
   // Get working dimensions
-  n1o2p1 = n1/2 + 1;
+  n1o2p1 = n1 / 2 + 1;
 
   // Calculate size of mode vectors
   vec_size = n2 * n1o2p1;
@@ -87,18 +92,40 @@ inline ReadModes::ReadModes(std::string filename, bool nondim = false) : m_filen
   modeFS.resize(vec_size);
   modeFST.resize(vec_size);
 
-  // Nondimensionalize
+  // Dimensionalize nondim quantities by default
   if (!nondim) {
     dimensionalize();
   }
 }
 
+inline ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_,
+                            double ylen_, double depth_, double g_, double L_,
+                            double T_)
+    : dt_out(dt_out_), T_stop(T_stop_), xlen(xlen_), ylen(ylen_), depth(depth_),
+      g(g_), L(L_), T(T_) {
+  // ^Manually set metadata for the sake of testing, do other expected steps
+  // No treatment of integer dimensions needed at the moment
+
+  // Initialize time index
+  itime_now = 0;
+  // Initialize output frequency
+  f_out = 1.0 / dt_out;
+
+  dimensionalize();
+}
+
 inline int ReadModes::time2step(double time) {
   // Look for same time or after
-  if (itime_now * dt_out < time) {
-    ++itime_now;
-  } else if ((itime_now - 1) * dt_out > time) {
-    --itime_now;
+  bool done = false;
+  while (!done) {
+    // Use a tolerance to avoid skipping close matches
+    if (itime_now * dt_out < (time - dt_out * 1e-8)) {
+      ++itime_now;
+    } else if ((itime_now - 1) * dt_out > time) {
+      --itime_now;
+    } else {
+      done = true;
+    }
   }
   return itime_now;
 }
@@ -111,7 +138,7 @@ inline void ReadModes::dimensionalize() {
   xlen *= L;
   ylen *= L;
   depth *= L;
-  g *= L/T/T;
+  g *= L / T / T;
 }
 
 inline void ReadModes::read_data(double time) {

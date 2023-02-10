@@ -51,5 +51,4 @@ inline void ReadModes::ascii_read(int itime) {
     }
     idx += 2 * n1o2p1;
   }
-
 };
