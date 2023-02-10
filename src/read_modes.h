@@ -21,6 +21,8 @@ public:
                 std::vector<double> &mZ, std::vector<double> &mT,
                 std::vector<double> &mFS, std::vector<double> &mFST);
 
+  int get_vector_size() { return vec_size; }
+
   // Output functions for testing
   int get_n1() { return n1; }
   int get_n2() { return n2; }
@@ -49,7 +51,7 @@ private:
 
   // HOS data dimensions
   int n1, n2;
-  double f_out, T_stop, xlen, ylen, depth, g, L, T;
+  double dt_out, f_out, T_stop, xlen, ylen, depth, g, L, T;
 
   // HOS data vectors
   std::vector<double> modeX, modeY, modeZ, modeT, modeFS, modeFST;
@@ -57,6 +59,7 @@ private:
   // HOS working dimensions
   int n1o2p1;
   int nYmode;
+  int vec_size;
 
   // Current time index
   int itime_now;
@@ -70,6 +73,20 @@ inline ReadModes::ReadModes(std::string filename, bool nondim = false) : m_filen
   // Initialize (TODO: according to file type)
   ascii_initialize();
 
+  // Get working dimensions
+  n1o2p1 = n1/2 + 1;
+
+  // Calculate size of mode vectors
+  vec_size = n2 * n1o2p1;
+
+  // Set size of mode vectors
+  modeX.resize(vec_size);
+  modeY.resize(vec_size);
+  modeZ.resize(vec_size);
+  modeT.resize(vec_size);
+  modeFS.resize(vec_size);
+  modeFST.resize(vec_size);
+
   // Nondimensionalize
   if (!nondim) {
     dimensionalize();
@@ -78,9 +95,9 @@ inline ReadModes::ReadModes(std::string filename, bool nondim = false) : m_filen
 
 inline int ReadModes::time2step(double time) {
   // Look for same time or after
-  if (itime_now / f_out < time) {
+  if (itime_now * dt_out < time) {
     ++itime_now;
-  } else if ((itime_now - 1) / f_out > time) {
+  } else if ((itime_now - 1) * dt_out > time) {
     --itime_now;
   }
   return itime_now;
@@ -88,6 +105,7 @@ inline int ReadModes::time2step(double time) {
 
 inline void ReadModes::dimensionalize() {
   // Dimensionalize read-in nondim quantities
+  dt_out *= T;
   f_out /= T;
   T_stop *= T;
   xlen *= L;
@@ -107,12 +125,12 @@ ReadModes::output_data(std::vector<double> &v1, std::vector<double> &v2,
                        std::vector<double> &v3, std::vector<double> &v4,
                        std::vector<double> &v5, std::vector<double> &v6) {
   // Copy class variables to input/output variables
-  std::copy(modeX.begin(), modeX.end(), std::back_inserter(v1));
-  std::copy(modeY.begin(), modeY.end(), std::back_inserter(v2));
-  std::copy(modeZ.begin(), modeZ.end(), std::back_inserter(v3));
-  std::copy(modeT.begin(), modeT.end(), std::back_inserter(v4));
-  std::copy(modeFS.begin(), modeFS.end(), std::back_inserter(v5));
-  std::copy(modeFST.begin(), modeFST.end(), std::back_inserter(v6));
+  std::copy(modeX.begin(), modeX.end(), v1.begin());
+  std::copy(modeY.begin(), modeY.end(), v2.begin());
+  std::copy(modeZ.begin(), modeZ.end(), v3.begin());
+  std::copy(modeT.begin(), modeT.end(), v4.begin());
+  std::copy(modeFS.begin(), modeFS.end(), v5.begin());
+  std::copy(modeFST.begin(), modeFST.end(), v6.begin());
 }
 
 inline void ReadModes::get_data(double time, std::vector<double> &mX,
