@@ -1,7 +1,7 @@
 #include "read_modes.h"
 #include <iterator>
 
-inline void ReadModes::ascii_initialize() {
+void ReadModes::ascii_initialize() {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
@@ -19,7 +19,7 @@ inline void ReadModes::ascii_initialize() {
   f_out = 1.0 / dt_out;
 }
 
-inline void ReadModes::ascii_read(int itime) {
+void ReadModes::ascii_read(int itime) {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());

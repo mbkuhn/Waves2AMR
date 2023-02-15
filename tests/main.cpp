@@ -1,4 +1,4 @@
-#include "../src/read_methods.h"
+#include "../Waves2AMR.h"
 
 int main() {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
