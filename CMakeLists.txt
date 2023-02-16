@@ -26,6 +26,7 @@ FILE(GLOB cppsrc ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 # Library for external use
 add_library(${exe_base} SHARED ${cppsrc})
+target_link_libraries(${exe_base} ${fftw_lib})
 install(TARGETS ${exe_base} DESTINATION ${PROJECT_NAME})
 
 # Make object files accessible (for sake of gtest code)
