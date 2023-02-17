@@ -1,37 +1,55 @@
 #include "modes_hosgrid.h"
 #include "cmath"
+#include <iostream>
 
-void modes_hosgrid::copy_complex(std::vector<std::complex<double> > complex_vector, fftw_complex* ptr) {
-  for (int i = 0; i < complex_vector.size(); ++i) {
-    ptr[i][0] = complex_vector[i].real();
-    ptr[i][1] = complex_vector[i].imag();
+void modes_hosgrid::copy_complex(
+    int n0, int n1, std::vector<std::complex<double>> complex_vector,
+    fftw_complex *ptr) {
+  for (int i = 0; i < n0; ++i) {
+    for (int j = 0; j < n1 / 2 + 1; ++j) {
+      int idx = i * (n1 / 2 + 1) + j;
+      ptr[idx][0] = complex_vector[idx].real();
+      ptr[idx][1] = complex_vector[idx].imag();
+    }
   }
 }
 
-void modes_hosgrid::allocate_copy_complex(std::vector<std::complex<double> > complex_vector, fftw_complex* ptr) {
-  ptr = new fftw_complex [complex_vector.size()];
-  copy_complex(complex_vector, ptr);
+fftw_complex *modes_hosgrid::allocate_copy_complex(
+    int n0, int n1, std::vector<std::complex<double>> complex_vector) {
+  // Allocate data needed for modes and create pointer
+  fftw_complex *a_ptr = new fftw_complex[n0 * (n1 / 2 + 1)];
+  // Copy mode data from vector
+  copy_complex(n0, n1, complex_vector, a_ptr);
+  // Return pointer to fftw_complex data
+  return a_ptr;
 }
 
-fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex* in) {
+fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex *in) {
   unsigned int flag = FFTW_PATIENT;
-  double *out;
-  return fftw_plan_dft_c2r_2d(n0, n1, in, out, flag);
+  // Output array is used for planning (except for FFTW_ESTIMATE)
+  double out[n0][n1];
+  // Make and return plan
+  return fftw_plan_dft_c2r_2d(n0, n1, in, &out[0][0], flag);
 }
 
-void modes_hosgrid::populate_hos_eta(fftw_plan p,
-                                     fftw_complex* eta_modes,
-                                     std::vector<double> HOS_eta) {
-  double *out;
-  fftw_execute_dft_c2r(p, eta_modes, out);
-  std::copy(&out[0], &out[0] + HOS_eta.size(), HOS_eta.begin());
+void modes_hosgrid::populate_hos_eta(int n0, int n1, fftw_plan p,
+                                     fftw_complex *eta_modes,
+                                     std::vector<double> &HOS_eta) {
+  // Local array for output data
+  double out[n0][n1];
+  // Perform complex-to-real (inverse) FFT
+  fftw_execute_dft_c2r(p, eta_modes, &out[0][0]);
+  // Copy data to output vector
+  std::copy(&out[0][0], &out[0][0] + HOS_eta.size(), HOS_eta.begin());
 }
-void modes_hosgrid::populate_hos_vel(
-    fftw_plan p, fftw_complex* x_modes,
-    fftw_complex* y_modes, fftw_complex* z_modes,
-    int n0, int n1, double xlen, double ylen, double depth, double z,
-    std::vector<double> HOS_u, std::vector<double> HOS_v,
-    std::vector<double> HOS_w) {
+
+void modes_hosgrid::populate_hos_vel(fftw_plan p, fftw_complex *x_modes,
+                                     fftw_complex *y_modes,
+                                     fftw_complex *z_modes, int n0, int n1,
+                                     double xlen, double ylen, double depth,
+                                     double z, std::vector<double> &HOS_u,
+                                     std::vector<double> &HOS_v,
+                                     std::vector<double> &HOS_w) {
   // Reused constants (lengths are nondim)
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
@@ -74,9 +92,10 @@ void modes_hosgrid::populate_hos_vel(
     }
   }
   // Output pointer
-  double *out;
+  auto out = new double[HOS_u.size()];
   // Perform inverse fft
   fftw_execute_dft_c2r(p, x_modes, out);
+  // Copy to output vectors
   std::copy(&out[0], &out[0] + HOS_u.size(), HOS_u.begin());
   // Repeat in other directions
   fftw_execute_dft_c2r(p, y_modes, out);
