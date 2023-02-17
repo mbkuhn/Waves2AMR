@@ -14,12 +14,9 @@ void modes_hosgrid::copy_complex(
   }
 }
 
-fftw_complex *modes_hosgrid::allocate_copy_complex(
-    int n0, int n1, std::vector<std::complex<double>> complex_vector) {
+fftw_complex *modes_hosgrid::allocate_complex(int n0, int n1) {
   // Allocate data needed for modes and create pointer
   fftw_complex *a_ptr = new fftw_complex[n0 * (n1 / 2 + 1)];
-  // Copy mode data from vector
-  copy_complex(n0, n1, complex_vector, a_ptr);
   // Return pointer to fftw_complex data
   return a_ptr;
 }
@@ -30,6 +27,18 @@ fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex *in) {
   double out[n0][n1];
   // Make and return plan
   return fftw_plan_dft_c2r_2d(n0, n1, in, &out[0][0], flag);
+}
+
+fftw_complex *modes_hosgrid::allocate_plan_copy(
+    int n0, int n1, fftw_plan &p, std::vector<std::complex<double>> complex_vector) {
+  // Allocate and get pointer
+  auto a_ptr = allocate_complex(n0, n1);
+  // Create plan before data is initialized
+  p = plan_ifftw(n0, n1, a_ptr);
+  // Copy mode data from input vector
+  copy_complex(n0, n1, complex_vector, a_ptr);
+  // Return pointer to fftw_complex data
+  return a_ptr;
 }
 
 void modes_hosgrid::populate_hos_eta(int n0, int n1, fftw_plan p,

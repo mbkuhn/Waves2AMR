@@ -9,11 +9,13 @@ namespace modes_hosgrid {
 void copy_complex(int n0, int n1,
                   std::vector<std::complex<double>> complex_vector,
                   fftw_complex *ptr);
-fftw_complex *
-allocate_copy_complex(int n0, int n1,
-                      std::vector<std::complex<double>> complex_vector);
+fftw_complex *allocate_complex(int n0, int n1);
 
 fftw_plan plan_ifftw(int n0, int n1, fftw_complex *in);
+
+fftw_complex *
+allocate_plan_copy(int n0, int n1, fftw_plan &p,
+                   std::vector<std::complex<double>> complex_vector);
 
 void populate_hos_eta(int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
                       std::vector<double> &HOS_eta);
