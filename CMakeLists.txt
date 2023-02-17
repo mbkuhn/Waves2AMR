@@ -6,8 +6,8 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall -Wextra -g -pedantic")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall -Wextra -g -pedantic -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3 -std=c++17")
 
 project(Waves2AMR)
 
