@@ -73,35 +73,58 @@ void modes_hosgrid::populate_hos_vel(
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
   // Loop modes to modify them
-  for (int ix = 0; ix < n0 / 2 + 1; ++ix) { // index limit?
-    for (int iy = 0; iy < n1; ++iy) {
+  for (int ix = 0; ix < n0; ++ix) {
+    for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
 
       // Get wavenumbers
-      const double kx = (double)ix * twoPi_xlen;
-      const double kyN2 = (double)(iy < n1 / 2 + 1 ? iy : n1 - iy) * twoPi_ylen;
-      const double k = sqrt(kx * kx + kyN2 * kyN2);
+      const double kxN2 = (double)(ix < n0 / 2 + 1 ? ix : n0 - ix) * twoPi_xlen;
+      const double ky = (double)iy * twoPi_ylen;
+      const double k = sqrt(kxN2 * kxN2 + ky * ky);
       // Get depth-related quantities
       const double kZ = k * (z + depth);
       const double kD = k * depth;
       // Get coefficients
       double coeff = 1.0;
       double coeff2 = 1.0;
-      if ((kZ < 50.0) && (kD <= 50.0)) {
-        coeff = cosh(kZ) / cosh(kD);
-        coeff2 = sinh(kZ) / sinh(kD);
+      if (ix == 0) {
+        // Do nothing for ix = 0, iy = 0
+        if (iy != 0) {
+          // Modified coeffs for ix = 0, iy > 0
+          if ((kZ < 50.0) && (kD <= 50.0)) {
+            coeff = exp(k * z) * (1.0 + exp(-2.0 * kZ)) /
+                    (1.0 + exp(-2.0 * kD));
+            coeff2 = exp(k * z) * (1.0 - exp(-2.0 * kZ)) /
+                     (1.0 - exp(-2.0 * kD));
+          } else {
+            coeff = exp(k * z);
+            coeff2 = coeff;
+          }
+          if (coeff >= 3.0) {
+            coeff = 3.0;
+          }
+          if (coeff2 >= 3.0) {
+            coeff2 = 3.0;
+          }
+        }
       } else {
-        coeff = exp(k * z);
-        coeff2 = coeff;
-      }
-      if (coeff >= 1000.0) {
-        coeff = 1000.0;
-      }
-      if (coeff2 >= 1000.0) {
-        coeff2 = 1000.0;
+        // Ordinary coefficients for other cases
+        if ((kZ < 50.0) && (kD <= 50.0)) {
+          coeff = cosh(kZ) / cosh(kD);
+          coeff2 = sinh(kZ) / sinh(kD);
+        } else {
+          coeff = exp(k * z);
+          coeff2 = coeff;
+        }
+        if (coeff >= 1000.0) {
+          coeff = 1000.0;
+        }
+        if (coeff2 >= 1000.0) {
+          coeff2 = 1000.0;
+        }
       }
       // Multiply modes by coefficients
       // hosProcedure is velocity, I think
-      int idx = ix * n1 + iy;
+      int idx = ix * (n1 / 2 + 1) + iy;
       (x_modes[idx])[0] *= coeff;
       (x_modes[idx])[1] *= coeff;
       (y_modes[idx])[0] *= coeff;

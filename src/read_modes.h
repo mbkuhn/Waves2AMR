@@ -50,6 +50,10 @@ public:
   // Convert dimensions for fortran reading
   /* bool fortran2cpp() {} */
 
+  // Output functions for use
+  int get_first_dimension() { return (from_fortran ? n2 : n1); }
+  int get_second_dimension() { return (from_fortran ? n1 : n2); }
+
   // Output functions for testing
   int get_n1() { return n1; }
   int get_n2() { return n2; }
@@ -90,6 +94,9 @@ private:
 
   // Current time index
   int itime_now;
+
+  // Relate between format of modes and FFT (only one option now)
+  const bool from_fortran = true;
 };
 
 #endif
