@@ -30,11 +30,23 @@ fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex *in) {
 }
 
 fftw_complex *modes_hosgrid::allocate_plan_copy(
-    int n0, int n1, fftw_plan &p, std::vector<std::complex<double>> complex_vector) {
+    int n0, int n1, fftw_plan &p,
+    std::vector<std::complex<double>> complex_vector) {
   // Allocate and get pointer
   auto a_ptr = allocate_complex(n0, n1);
   // Create plan before data is initialized
   p = plan_ifftw(n0, n1, a_ptr);
+  // Copy mode data from input vector
+  copy_complex(n0, n1, complex_vector, a_ptr);
+  // Return pointer to fftw_complex data
+  return a_ptr;
+}
+
+fftw_complex *
+modes_hosgrid::allocate_copy(int n0, int n1,
+                             std::vector<std::complex<double>> complex_vector) {
+  // Allocate and get pointer
+  auto a_ptr = allocate_complex(n0, n1);
   // Copy mode data from input vector
   copy_complex(n0, n1, complex_vector, a_ptr);
   // Return pointer to fftw_complex data
@@ -52,13 +64,11 @@ void modes_hosgrid::populate_hos_eta(int n0, int n1, fftw_plan p,
   std::copy(&out[0][0], &out[0][0] + HOS_eta.size(), HOS_eta.begin());
 }
 
-void modes_hosgrid::populate_hos_vel(fftw_plan p, fftw_complex *x_modes,
-                                     fftw_complex *y_modes,
-                                     fftw_complex *z_modes, int n0, int n1,
-                                     double xlen, double ylen, double depth,
-                                     double z, std::vector<double> &HOS_u,
-                                     std::vector<double> &HOS_v,
-                                     std::vector<double> &HOS_w) {
+void modes_hosgrid::populate_hos_vel(
+    int n0, int n1, double xlen, double ylen, double depth, double z,
+    fftw_plan p, fftw_complex *x_modes, fftw_complex *y_modes,
+    fftw_complex *z_modes, std::vector<double> &HOS_u,
+    std::vector<double> &HOS_v, std::vector<double> &HOS_w) {
   // Reused constants (lengths are nondim)
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;

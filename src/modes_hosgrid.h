@@ -17,11 +17,14 @@ fftw_complex *
 allocate_plan_copy(int n0, int n1, fftw_plan &p,
                    std::vector<std::complex<double>> complex_vector);
 
+fftw_complex *allocate_copy(int n0, int n1,
+                            std::vector<std::complex<double>> complex_vector);
+
 void populate_hos_eta(int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
                       std::vector<double> &HOS_eta);
-void populate_hos_vel(fftw_plan p, fftw_complex *x_modes, fftw_complex *y_modes,
-                      fftw_complex *z_modes, int n0, int n1, double xlen,
-                      double ylen, double depth, double z,
+void populate_hos_vel(int n0, int n1, double xlen, double ylen, double depth,
+                      double z, fftw_plan p, fftw_complex *x_modes,
+                      fftw_complex *y_modes, fftw_complex *z_modes,
                       std::vector<double> &HOS_u, std::vector<double> &HOS_v,
                       std::vector<double> &HOS_w);
 
