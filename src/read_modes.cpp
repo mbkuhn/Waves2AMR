@@ -26,7 +26,7 @@ ReadModes::ReadModes(std::string filename, bool nondim, bool allmodes)
     modeFST.resize(vec_size);
   }
 
-  // Dimensionalize nondim quantities by default
+  // Do not dimensionalize nondim quantities by default
   if (!nondim) {
     dimensionalize();
   }

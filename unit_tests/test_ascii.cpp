@@ -84,7 +84,7 @@ TEST_F(AsciiReadTest, Init) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
 
   // Read and keep nondim quantities
-  ReadModes rmodes(fname, true);
+  ReadModes rmodes(fname);
 
   EXPECT_EQ(rmodes.get_n1(), 64);
   EXPECT_EQ(rmodes.get_n2(), 64);
@@ -101,7 +101,7 @@ TEST_F(AsciiReadTest, Init) {
 TEST_F(AsciiReadTest, InitDim) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
   // Read and convert nondim quantities
-  ReadModes rmodes(fname);
+  ReadModes rmodes(fname, false);
 
   constexpr double tol = 1e-11;
   EXPECT_NEAR(rmodes.get_f(), 0.01, tol);

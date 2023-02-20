@@ -8,7 +8,7 @@
 #include <vector>
 class ReadModes {
 public:
-  ReadModes(std::string, bool nondim = false, bool allmodes = false);
+  ReadModes(std::string, bool nondim = true, bool allmodes = false);
 
   ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
             double depth_, double g_, double L_, double T_);
@@ -53,6 +53,7 @@ public:
   // Output functions for testing
   int get_n1() { return n1; }
   int get_n2() { return n2; }
+  double get_dtout() { return dt_out; }
   double get_f() { return f_out; }
   double get_Tstop() { return T_stop; }
   double get_xlen() { return xlen; }
