@@ -148,7 +148,7 @@ TEST_F(HOSGridTest, Sine) {
   fftw_complex *ptr_modes =
       modes_hosgrid::allocate_plan_copy(nx, ny, plan, modes2D);
 
-  // Setup output vector
+  // Set up output vector
   std::vector<double> spatial2D;
   spatial2D.resize((nx * ny));
   // Perform fftw

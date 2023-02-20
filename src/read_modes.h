@@ -1,5 +1,6 @@
 #ifndef READ_MODES_H
 #define READ_MODES_H
+#include <complex>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -7,7 +8,7 @@
 #include <vector>
 class ReadModes {
 public:
-  ReadModes(std::string, bool nondim = false);
+  ReadModes(std::string, bool nondim = false, bool allmodes = false);
 
   ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
             double depth_, double g_, double L_, double T_);
@@ -16,19 +17,38 @@ public:
 
   void read_data(double time);
 
-  void output_data(std::vector<double> &v1, std::vector<double> &v2,
-                   std::vector<double> &v3, std::vector<double> &v4,
-                   std::vector<double> &v5, std::vector<double> &v6);
+  void output_data(std::vector<std::complex<double>> &v1,
+                   std::vector<std::complex<double>> &v2,
+                   std::vector<std::complex<double>> &v3,
+                   std::vector<std::complex<double>> &v4,
+                   std::vector<std::complex<double>> &v5,
+                   std::vector<std::complex<double>> &v6);
 
-  void get_data(double time, std::vector<double> &mX, std::vector<double> &mY,
-                std::vector<double> &mZ, std::vector<double> &mT,
-                std::vector<double> &mFS, std::vector<double> &mFST);
+  void get_data(double time, std::vector<std::complex<double>> &mX,
+                std::vector<std::complex<double>> &mY,
+                std::vector<std::complex<double>> &mZ,
+                std::vector<std::complex<double>> &mT,
+                std::vector<std::complex<double>> &mFS,
+                std::vector<std::complex<double>> &mFST);
+
+  void output_data(std::vector<std::complex<double>> &v1,
+                   std::vector<std::complex<double>> &v2,
+                   std::vector<std::complex<double>> &v3,
+                   std::vector<std::complex<double>> &v4);
+
+  void get_data(double time, std::vector<std::complex<double>> &mX,
+                std::vector<std::complex<double>> &mY,
+                std::vector<std::complex<double>> &mZ,
+                std::vector<std::complex<double>> &mFS);
 
   // Calculate size of data for each mode variable (# of complex values)
   int get_vector_size() { return vec_size; }
 
   // Convert time to timestep
   int time2step(double time);
+
+  // Convert dimensions for fortran reading
+  /* bool fortran2cpp() {} */
 
   // Output functions for testing
   int get_n1() { return n1; }
@@ -46,6 +66,8 @@ private:
   // ASCII functions
   void ascii_initialize();
   void ascii_read(int itime);
+  void ascii_read_full(int itime);
+  void ascii_read_brief(int itime);
 
   // Dimensionalize read-in quantities
   void dimensionalize();
@@ -58,7 +80,7 @@ private:
   double dt_out, f_out, T_stop, xlen, ylen, depth, g, L, T;
 
   // HOS data vectors
-  std::vector<double> modeX, modeY, modeZ, modeT, modeFS, modeFST;
+  std::vector<std::complex<double>> modeX, modeY, modeZ, modeT, modeFS, modeFST;
 
   // HOS working dimensions
   int n1o2p1;

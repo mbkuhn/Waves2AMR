@@ -1,6 +1,6 @@
 #include "read_modes.h"
 
-ReadModes::ReadModes(std::string filename, bool nondim)
+ReadModes::ReadModes(std::string filename, bool nondim, bool allmodes)
     : m_filename(filename) {
   // Set time index value
   itime_now = 0;
@@ -19,9 +19,12 @@ ReadModes::ReadModes(std::string filename, bool nondim)
   modeX.resize(vec_size);
   modeY.resize(vec_size);
   modeZ.resize(vec_size);
-  modeT.resize(vec_size);
   modeFS.resize(vec_size);
-  modeFST.resize(vec_size);
+  // These modes are optional
+  if (allmodes) {
+    modeT.resize(vec_size);
+    modeFST.resize(vec_size);
+  }
 
   // Dimensionalize nondim quantities by default
   if (!nondim) {
@@ -45,6 +48,8 @@ ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
 }
 
 int ReadModes::time2step(double time) {
+  // Return -1 if time is negative
+  if (time < 0.0) return -1;
   // Look for same time or after
   bool done = false;
   while (!done) {
@@ -77,9 +82,12 @@ void ReadModes::read_data(double time) {
   ascii_read(itime);
 }
 
-void ReadModes::output_data(std::vector<double> &v1, std::vector<double> &v2,
-                            std::vector<double> &v3, std::vector<double> &v4,
-                            std::vector<double> &v5, std::vector<double> &v6) {
+void ReadModes::output_data(std::vector<std::complex<double>> &v1,
+                            std::vector<std::complex<double>> &v2,
+                            std::vector<std::complex<double>> &v3,
+                            std::vector<std::complex<double>> &v4,
+                            std::vector<std::complex<double>> &v5,
+                            std::vector<std::complex<double>> &v6) {
   // Copy class variables to input/output variables
   std::copy(modeX.begin(), modeX.end(), v1.begin());
   std::copy(modeY.begin(), modeY.end(), v2.begin());
@@ -89,14 +97,37 @@ void ReadModes::output_data(std::vector<double> &v1, std::vector<double> &v2,
   std::copy(modeFST.begin(), modeFST.end(), v6.begin());
 }
 
-void ReadModes::get_data(double time, std::vector<double> &mX,
-                         std::vector<double> &mY, std::vector<double> &mZ,
-                         std::vector<double> &mT, std::vector<double> &mFS,
-                         std::vector<double> &mFST) {
+void ReadModes::output_data(std::vector<std::complex<double>> &v1,
+                            std::vector<std::complex<double>> &v2,
+                            std::vector<std::complex<double>> &v3,
+                            std::vector<std::complex<double>> &v4) {
+  // Copy class variables to input/output variables
+  std::copy(modeX.begin(), modeX.end(), v1.begin());
+  std::copy(modeY.begin(), modeY.end(), v2.begin());
+  std::copy(modeZ.begin(), modeZ.end(), v3.begin());
+  std::copy(modeFS.begin(), modeFS.end(), v4.begin());
+}
+
+void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
+                         std::vector<std::complex<double>> &mY,
+                         std::vector<std::complex<double>> &mZ,
+                         std::vector<std::complex<double>> &mT,
+                         std::vector<std::complex<double>> &mFS,
+                         std::vector<std::complex<double>> &mFST) {
   // Read data
   read_data(time);
   // Copy data to output
   output_data(mX, mY, mZ, mT, mFS, mFST);
+}
+
+void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
+                         std::vector<std::complex<double>> &mY,
+                         std::vector<std::complex<double>> &mZ,
+                         std::vector<std::complex<double>> &mFS) {
+  // Read data
+  read_data(time);
+  // Copy data to output
+  output_data(mX, mY, mZ, mFS);
 }
 
 void ReadModes::print_file_constants() {
