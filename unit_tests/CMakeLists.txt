@@ -2,6 +2,7 @@ target_sources(${exe_utest_name}
                PRIVATE
                test_readops.cpp
                test_ascii.cpp
+               test_fftexamples.cpp
                test_hosgrid.cpp
                ${CMAKE_SOURCE_DIR}/googletest/googletest/src/gtest_main.cc)
 target_include_directories(${exe_utest_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

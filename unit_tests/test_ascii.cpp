@@ -61,9 +61,7 @@ std::array<double, 6> ModeSumBrief(double time, double initval) {
   double mX_sum = 0;
   double mY_sum = 0;
   double mZ_sum = 0;
-  double mT_sum = 0;
   double mFS_sum = 0;
-  double mFST_sum = 0;
   for (int i = 0; i < vsize; ++i) {
     mX_sum += std::abs(mX[i].real()) + std::abs(mX[i].imag());
     mY_sum += std::abs(mY[i].real()) + std::abs(mY[i].imag());

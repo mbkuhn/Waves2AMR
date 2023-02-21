@@ -57,18 +57,25 @@ void modes_hosgrid::populate_hos_eta(int n0, int n1, fftw_plan p,
                                      fftw_complex *eta_modes,
                                      std::vector<double> &HOS_eta) {
   // Local array for output data
-  double out[n0][n1];
+  double out[n0 * n1];
   // Perform complex-to-real (inverse) FFT
-  fftw_execute_dft_c2r(p, eta_modes, &out[0][0]);
+  do_ifftw(n0, n1, p, eta_modes, &out[0]);
+
   // Copy data to output vector
-  std::copy(&out[0][0], &out[0][0] + HOS_eta.size(), HOS_eta.begin());
+  std::copy(&out[0], &out[0] + HOS_eta.size(), HOS_eta.begin());
+
+  // !! -- This function MODIFIES the modes -- !! //
+  //   .. they are not intended to be reused ..   //
 }
 
 void modes_hosgrid::populate_hos_vel(
     int n0, int n1, double xlen, double ylen, double depth, double z,
-    fftw_plan p, fftw_complex *x_modes, fftw_complex *y_modes,
-    fftw_complex *z_modes, std::vector<double> &HOS_u,
-    std::vector<double> &HOS_v, std::vector<double> &HOS_w) {
+    std::vector<std::complex<double>> mX_vector,
+    std::vector<std::complex<double>> mY_vector,
+    std::vector<std::complex<double>> mZ_vector, fftw_plan p,
+    fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
+    std::vector<double> &HOS_u, std::vector<double> &HOS_v,
+    std::vector<double> &HOS_w) {
   // Reused constants (lengths are nondim)
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
@@ -77,7 +84,7 @@ void modes_hosgrid::populate_hos_vel(
     for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
 
       // Get wavenumbers
-      const double kxN2 = (double)(ix < n0 / 2 + 1 ? ix : n0 - ix) * twoPi_xlen;
+      const double kxN2 = (double)(ix < n0 / 2 + 1 ? ix : ix - n0) * twoPi_xlen;
       const double ky = (double)iy * twoPi_ylen;
       const double k = sqrt(kxN2 * kxN2 + ky * ky);
       // Get depth-related quantities
@@ -86,15 +93,15 @@ void modes_hosgrid::populate_hos_vel(
       // Get coefficients
       double coeff = 1.0;
       double coeff2 = 1.0;
-      if (ix == 0) {
+      if (iy == 0) {
         // Do nothing for ix = 0, iy = 0
-        if (iy != 0) {
-          // Modified coeffs for ix = 0, iy > 0
+        if (ix != 0) {
+          // Modified coeffs for iy = 0, ix > 0
           if ((kZ < 50.0) && (kD <= 50.0)) {
-            coeff = exp(k * z) * (1.0 + exp(-2.0 * kZ)) /
-                    (1.0 + exp(-2.0 * kD));
-            coeff2 = exp(k * z) * (1.0 - exp(-2.0 * kZ)) /
-                     (1.0 - exp(-2.0 * kD));
+            coeff =
+                exp(k * z) * (1.0 + exp(-2.0 * kZ)) / (1.0 + exp(-2.0 * kD));
+            coeff2 =
+                exp(k * z) * (1.0 - exp(-2.0 * kZ)) / (1.0 - exp(-2.0 * kD));
           } else {
             coeff = exp(k * z);
             coeff2 = coeff;
@@ -125,23 +132,38 @@ void modes_hosgrid::populate_hos_vel(
       // Multiply modes by coefficients
       // hosProcedure is velocity, I think
       int idx = ix * (n1 / 2 + 1) + iy;
-      (x_modes[idx])[0] *= coeff;
-      (x_modes[idx])[1] *= coeff;
-      (y_modes[idx])[0] *= coeff;
-      (y_modes[idx])[1] *= coeff;
-      (z_modes[idx])[0] *= coeff2;
-      (z_modes[idx])[1] *= coeff2;
+      (x_modes[idx])[0] = coeff * mX_vector[idx].real();
+      (x_modes[idx])[1] = coeff * mX_vector[idx].imag();
+      (y_modes[idx])[0] = coeff * mY_vector[idx].real();
+      (y_modes[idx])[1] = coeff * mY_vector[idx].imag();
+      (z_modes[idx])[0] = coeff2 * mZ_vector[idx].real();
+      (z_modes[idx])[1] = coeff2 * mZ_vector[idx].imag();
+
     }
   }
   // Output pointer
   auto out = new double[HOS_u.size()];
   // Perform inverse fft
-  fftw_execute_dft_c2r(p, x_modes, out);
+  do_ifftw(n0, n1, p, x_modes, &out[0]);
   // Copy to output vectors
   std::copy(&out[0], &out[0] + HOS_u.size(), HOS_u.begin());
   // Repeat in other directions
-  fftw_execute_dft_c2r(p, y_modes, out);
+  do_ifftw(n0, n1, p, y_modes, &out[0]);
   std::copy(&out[0], &out[0] + HOS_v.size(), HOS_v.begin());
-  fftw_execute_dft_c2r(p, z_modes, out);
+  do_ifftw(n0, n1, p, z_modes, &out[0]);
   std::copy(&out[0], &out[0] + HOS_w.size(), HOS_w.begin());
+}
+
+void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in, double *sp_out) {
+  // Modify modes with conversion coefficients
+  for (int ix = 0; ix < n0; ++ix) {
+    for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
+      int idx = ix * (n1 / 2 + 1) + iy;
+      double f2s = (iy == 0 ? 1.0 : 0.5);
+      (f_in[idx])[0] *= f2s;
+      (f_in[idx])[1] *= f2s;
+    }
+  }
+  // Perform fft
+  fftw_execute_dft_c2r(p, f_in, sp_out);
 }

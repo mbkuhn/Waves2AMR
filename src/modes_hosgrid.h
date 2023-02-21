@@ -23,10 +23,14 @@ fftw_complex *allocate_copy(int n0, int n1,
 void populate_hos_eta(int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
                       std::vector<double> &HOS_eta);
 void populate_hos_vel(int n0, int n1, double xlen, double ylen, double depth,
-                      double z, fftw_plan p, fftw_complex *x_modes,
-                      fftw_complex *y_modes, fftw_complex *z_modes,
-                      std::vector<double> &HOS_u, std::vector<double> &HOS_v,
-                      std::vector<double> &HOS_w);
+                      double z, std::vector<std::complex<double>> mX_vector,
+                      std::vector<std::complex<double>> mY_vector,
+                      std::vector<std::complex<double>> mZ_vector, fftw_plan p,
+                      fftw_complex *x_modes, fftw_complex *y_modes,
+                      fftw_complex *z_modes, std::vector<double> &HOS_u,
+                      std::vector<double> &HOS_v, std::vector<double> &HOS_w);
+
+void do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in, double *sp_out);
 
 } // namespace modes_hosgrid
 #endif

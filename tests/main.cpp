@@ -17,23 +17,21 @@ int main() {
   std::vector<std::complex<double>> mX(vsize, initval);
   std::vector<std::complex<double>> mY(vsize, initval);
   std::vector<std::complex<double>> mZ(vsize, initval);
-  std::vector<std::complex<double>> mT(vsize, initval);
   std::vector<std::complex<double>> mFS(vsize, initval);
-  std::vector<std::complex<double>> mFST(vsize, initval);
 
   // Timestep stored: t = dt
   double dt_out = rmodes.get_dtout();
-  rmodes.get_data(dt_out, mX, mY, mZ, mT, mFS, mFST);
+  rmodes.get_data(dt_out, mX, mY, mZ, mFS);
 
   // Set up fftw_complex ptr for eta and get plan
   fftw_plan plan;
   fftw_complex *eta_modes =
       modes_hosgrid::allocate_plan_copy(n0, n1, plan, mFS);
 
-  // Set up ptrs for velocity as well
-  fftw_complex *u_modes = modes_hosgrid::allocate_copy(n0, n1, mX);
-  fftw_complex *v_modes = modes_hosgrid::allocate_copy(n0, n1, mY);
-  fftw_complex *w_modes = modes_hosgrid::allocate_copy(n0, n1, mZ);
+  // Allocate ptrs for velocity as well, copy is built-in later
+  auto u_modes = modes_hosgrid::allocate_complex(n0, n1);
+  auto v_modes = modes_hosgrid::allocate_complex(n0, n1);
+  auto w_modes = modes_hosgrid::allocate_complex(n0, n1);
 
   // Set up output vectors
   std::vector<double> eta, u0, u1, v0, v1, w0, w1;
@@ -51,14 +49,14 @@ int main() {
   double depth = rmodes.get_depth();
   double xlen = rmodes.get_xlen();
   double ylen = rmodes.get_ylen();
-  double ht0 = 0.0;
-  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, plan, u_modes,
-                                  v_modes, w_modes, u0, v0, w0);
+  double ht0 = -0.75325763322349282;
+  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
+                                  plan, u_modes, v_modes, w_modes, u0, v0, w0);
 
   // Perform fftw for velocity at another height
-  double ht1 = -0.5 * depth;
-  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht1, plan, u_modes,
-                                  v_modes, w_modes, u1, v1, w1);
+  double ht1 = -1.3822500981745969;
+  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht1, mX, mY, mZ,
+                                  plan, u_modes, v_modes, w_modes, u1, v1, w1);
 
   // Get max, min of each quantity and print
   double max_eta = -100.0;
@@ -95,7 +93,7 @@ int main() {
     }
   }
 
-  std::cout << std::endl << "Max and min quantities\n";
+  std::cout << std::endl << "Max and min nondim quantities\n";
   std::cout << "  eta: " << max_eta << " " << min_eta << std::endl;
   std::cout << "at ht = " << ht0 << std::endl;
   std::cout << "  u  : " << max_u0 << " " << min_u0 << std::endl;
