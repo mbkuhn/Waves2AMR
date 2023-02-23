@@ -45,10 +45,12 @@ int main() {
 
   // Perform fftw for eta
   modes_hosgrid::populate_hos_eta(n0, n1, plan, eta_modes, eta);
-  // Perform fftw for velocity at one height
+  // Get nondim dimensions
   double depth = rmodes.get_depth();
   double xlen = rmodes.get_xlen();
   double ylen = rmodes.get_ylen();
+
+  // Perform fftw for velocity at one height
   double ht0 = -0.75325763322349282;
   modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
                                   plan, u_modes, v_modes, w_modes, u0, v0, w0);

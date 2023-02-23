@@ -17,7 +17,6 @@ std::array<double, 8> ModeSum(double time, double initval) {
   std::vector<std::complex<double>> mFS(vsize, initval);
   std::vector<std::complex<double>> mFST(vsize, initval);
 
-  // Mode quantities are set to 0 at t = 0
   rmodes.get_data(time, mX, mY, mZ, mT, mFS, mFST);
 
   // Get sum of vectors
@@ -54,7 +53,6 @@ std::array<double, 6> ModeSumBrief(double time, double initval) {
   std::vector<std::complex<double>> mZ(vsize, initval);
   std::vector<std::complex<double>> mFS(vsize, initval);
 
-  // Mode quantities are set to 0 at t = 0
   rmodes.get_data(time, mX, mY, mZ, mFS);
 
   // Get sum of vectors
