@@ -3,6 +3,6 @@
 // All headers from src
 #include "src/read_modes.h"
 #include "src/modes_hosgrid.h"
-#include "src/hosgrid_spatial_interp.h"
+#include "src/amrex_interface_ops.h"
 
 #endif

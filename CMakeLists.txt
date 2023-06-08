@@ -11,6 +11,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3 -std=c++17")
 
 project(Waves2AMR)
 
+# Options
+option(WAVES2AMR_USE_INTERNAL_AMREX "Add AMReX as subproject" ON)
+option(WAVES2AMR_ENABLE_MPI "Enable MPI" OFF)
+option(WAVES2AMR_ENABLE_OPENMP "Enable OpenMP" OFF)
+option(WAVES2AMR_ENABLE_FCOMPARE "Enable FCompare" OFF)
+option(WAVES2AMR_ENABLE_CUDA "Enable CUDA" OFF)
+option(WAVES2AMR_ENABLE_ROCM "Enable ROCm/HIP" OFF)
+option(WAVES2AMR_ENABLE_SYCL "Enable Intel OneAPI SyCL" OFF)
+
 # Target names
 set(exe_base "Waves2AMR")
 set(exe_name "${exe_base}_test")
@@ -38,10 +47,17 @@ target_link_libraries(${exe_lib} ${fftw_lib})
 add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
 target_link_libraries(${exe_name} ${fftw_lib})
 
+# AMReX
+include(amrex_utils.cmake)
+init_amrex()
+target_link_libraries(${exe_base} AMReX::amrex)
+target_link_libraries(${exe_lib} AMReX::amrex)
+target_link_libraries(${exe_name} AMReX::amrex)
+
 option(ENABLE_UNIT_TESTS "Enable unit testing" ON)
 
 if(ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
-  add_subdirectory("googletest")
+  add_subdirectory("submods/googletest")
   add_subdirectory("unit_tests")
 endif()
