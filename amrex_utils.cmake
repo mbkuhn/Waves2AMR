@@ -10,7 +10,7 @@ endfunction(target_link_libraries_system)
 macro(amrex_options)
 #Set amrex options
   set(USE_XSDK_DEFAULTS OFF)
-  set(AMReX_SPACEDIM 2)
+  set(AMReX_SPACEDIM 3)
   set(AMReX_AMRDATA OFF)
   set(AMReX_AMRLEVEL OFF)
   set(AMReX_ASSERTIONS OFF)
