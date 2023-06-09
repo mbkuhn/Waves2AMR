@@ -53,16 +53,17 @@ modes_hosgrid::allocate_copy(int n0, int n1,
   return a_ptr;
 }
 
-void modes_hosgrid::populate_hos_eta(int n0, int n1, fftw_plan p,
-                                     fftw_complex *eta_modes,
-                                     std::vector<double> &HOS_eta) {
+void modes_hosgrid::populate_hos_eta(
+    int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
   // Local array for output data
   double out[n0 * n1];
   // Perform complex-to-real (inverse) FFT
   do_ifftw(n0, n1, p, eta_modes, &out[0]);
 
   // Copy data to output vector
-  std::copy(&out[0], &out[0] + HOS_eta.size(), HOS_eta.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_eta.size(),
+                   HOS_eta.begin());
 
   // !! -- This function MODIFIES the modes -- !! //
   //   .. they are not intended to be reused ..   //
@@ -74,8 +75,9 @@ void modes_hosgrid::populate_hos_vel(
     std::vector<std::complex<double>> mY_vector,
     std::vector<std::complex<double>> mZ_vector, fftw_plan p,
     fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
-    std::vector<double> &HOS_u, std::vector<double> &HOS_v,
-    std::vector<double> &HOS_w) {
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w) {
   // Reused constants (lengths are nondim)
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
@@ -138,7 +140,6 @@ void modes_hosgrid::populate_hos_vel(
       (y_modes[idx])[1] = coeff * mY_vector[idx].imag();
       (z_modes[idx])[0] = coeff2 * mZ_vector[idx].real();
       (z_modes[idx])[1] = coeff2 * mZ_vector[idx].imag();
-
     }
   }
   // Output pointer
@@ -146,15 +147,19 @@ void modes_hosgrid::populate_hos_vel(
   // Perform inverse fft
   do_ifftw(n0, n1, p, x_modes, &out[0]);
   // Copy to output vectors
-  std::copy(&out[0], &out[0] + HOS_u.size(), HOS_u.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_u.size(),
+                   HOS_u.begin());
   // Repeat in other directions
   do_ifftw(n0, n1, p, y_modes, &out[0]);
-  std::copy(&out[0], &out[0] + HOS_v.size(), HOS_v.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_v.size(),
+                   HOS_v.begin());
   do_ifftw(n0, n1, p, z_modes, &out[0]);
-  std::copy(&out[0], &out[0] + HOS_w.size(), HOS_w.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_w.size(),
+                   HOS_w.begin());
 }
 
-void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in, double *sp_out) {
+void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in,
+                             double *sp_out) {
   // Modify modes with conversion coefficients
   for (int ix = 0; ix < n0; ++ix) {
     for (int iy = 0; iy < n1 / 2 + 1; ++iy) {

@@ -65,16 +65,21 @@ TEST_F(HOSGridTest, Sine) {
       modes_hosgrid::allocate_plan_copy(nx, ny, plan, modes2D);
 
   // Set up output vector
-  std::vector<double> spatial2D;
-  spatial2D.resize((nx * ny));
+  amrex::Gpu::DeviceVector<amrex::Real> spatial2D(nx * ny, 0.0);
   // Perform fftw
   modes_hosgrid::populate_hos_eta(nx, ny, plan, ptr_modes, spatial2D);
+
+  // Copy from device to host
+  std::vector<amrex::Real> vlocal;
+  vlocal.resize(nx * ny);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, spatial2D.begin(), spatial2D.end(),
+                   &vlocal[0]);
 
   // Solution should be sine curve
   for (int ix = 0; ix < nx; ++ix) {
     for (int iy = 0; iy < ny; ++iy) {
       EXPECT_NEAR(sin(omega0 * (double)ix / (double)nx),
-                  spatial2D[ix * ny + iy], 1e-15);
+                  vlocal[ix * ny + iy], 1e-15);
     }
   }
 
@@ -111,17 +116,22 @@ TEST_F(HOSGridTest, Cosine) {
       modes_hosgrid::allocate_plan_copy(nx, ny, plan, modes2D);
 
   // Setup output vector
-  std::vector<double> spatial2D;
-  spatial2D.resize((nx * ny));
+  amrex::Gpu::DeviceVector<amrex::Real> spatial2D(nx * ny, 0.0);
   // Perform fftw
   modes_hosgrid::populate_hos_eta(nx, ny, plan, ptr_modes, spatial2D);
 
-  // Solution should be sine curve
+  // Copy from device to host
+  std::vector<amrex::Real> vlocal;
+  vlocal.resize(nx * ny);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, spatial2D.begin(), spatial2D.end(),
+                   &vlocal[0]);
+
+  // Solution should be cosine curve
   double factor = 0.25 / ny;
   for (int ix = 0; ix < nx; ++ix) {
     for (int iy = 0; iy < ny; ++iy) {
       EXPECT_NEAR(cos(omega0 * (double)iy / (double)ny),
-                  factor * spatial2D[ix * ny + iy], 1e-15);
+                  factor * vlocal[ix * ny + iy], 1e-15);
     }
   }
 

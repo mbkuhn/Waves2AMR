@@ -34,22 +34,26 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
   auto w_modes = modes_hosgrid::allocate_complex(n0, n1);
 
   // Set up output vectors
-  std::vector<double> eta, u, v, w;
-  eta.resize((n0 * n1));
-  u.resize((n0 * n1));
-  v.resize((n0 * n1));
-  w.resize((n0 * n1));
+  amrex::Gpu::DeviceVector<amrex::Real> eta(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> u(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> v(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> w(n0 * n1, 0.0);
 
   // Get spatial data for eta
   modes_hosgrid::populate_hos_eta(n0, n1, plan, eta_modes, eta);
+  // Transfer to host
+  std::vector<amrex::Real> etalocal;
+  etalocal.resize(eta.size());
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, eta.begin(), eta.end(),
+                   &etalocal[0]);
   // Get max and min
   double max_eta = -100.0;
   double min_eta = 100.0;
   for (int i0 = 0; i0 < n0; ++i0) {
     for (int i1 = 0; i1 < n1; ++i1) {
       int idx = i0 * n1 + i1;
-      max_eta = std::max(max_eta, eta[idx]);
-      min_eta = std::min(min_eta, eta[idx]);
+      max_eta = std::max(max_eta, etalocal[idx]);
+      min_eta = std::min(min_eta, etalocal[idx]);
     }
   }
 
@@ -74,6 +78,14 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
                                     mZ, plan, u_modes, v_modes, w_modes, u, v,
                                     w);
 
+    // Transfer to host
+    std::vector<amrex::Real> ulocal, vlocal, wlocal;
+    ulocal.resize(n0 * n1);
+    vlocal.resize(n0 * n1);
+    wlocal.resize(n0 * n1);
+    amrex::Gpu::copy(amrex::Gpu::deviceToHost, u.begin(), u.end(), &ulocal[0]);
+    amrex::Gpu::copy(amrex::Gpu::deviceToHost, v.begin(), v.end(), &vlocal[0]);
+    amrex::Gpu::copy(amrex::Gpu::deviceToHost, w.begin(), w.end(), &wlocal[0]);
     double max_u = -100.0;
     double min_u = 100.0;
     double max_v = -100.0;

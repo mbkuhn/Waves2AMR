@@ -34,14 +34,13 @@ int main() {
   auto w_modes = modes_hosgrid::allocate_complex(n0, n1);
 
   // Set up output vectors
-  std::vector<double> eta, u0, u1, v0, v1, w0, w1;
-  eta.resize((n0 * n1));
-  u0.resize((n0 * n1));
-  u1.resize((n0 * n1));
-  v0.resize((n0 * n1));
-  v1.resize((n0 * n1));
-  w0.resize((n0 * n1));
-  w1.resize((n0 * n1));
+  amrex::Gpu::DeviceVector<amrex::Real> eta(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> u0(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> v0(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> w0(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> u1(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> v1(n0 * n1, 0.0);
+  amrex::Gpu::DeviceVector<amrex::Real> w1(n0 * n1, 0.0);
 
   // Perform fftw for eta
   modes_hosgrid::populate_hos_eta(n0, n1, plan, eta_modes, eta);
@@ -59,6 +58,23 @@ int main() {
   double ht1 = -1.3822500981745969;
   modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht1, mX, mY, mZ,
                                   plan, u_modes, v_modes, w_modes, u1, v1, w1);
+
+  // Transfer to host
+  std::vector<amrex::Real> etal, u0l, v0l, w0l, u1l, v1l, w1l;
+  etal.resize(n0 * n1);
+  u0l.resize(n0 * n1);
+  v0l.resize(n0 * n1);
+  w0l.resize(n0 * n1);
+  u1l.resize(n0 * n1);
+  v1l.resize(n0 * n1);
+  w1l.resize(n0 * n1);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, eta.begin(), eta.end(), &etal[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, u0.begin(), u0.end(), &u0l[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, v0.begin(), v0.end(), &v0l[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, w0.begin(), w0.end(), &w0l[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, u1.begin(), u1.end(), &u1l[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, v1.begin(), v1.end(), &v1l[0]);
+  amrex::Gpu::copy(amrex::Gpu::deviceToHost, w1.begin(), w1.end(), &w1l[0]);
 
   // Get max, min of each quantity and print
   double max_eta = -100.0;
@@ -78,20 +94,20 @@ int main() {
   for (int i0 = 0; i0 < n0; ++i0) {
     for (int i1 = 0; i1 < n1; ++i1) {
       int idx = i0 * n1 + i1;
-      max_eta = std::max(max_eta, eta[idx]);
-      min_eta = std::min(min_eta, eta[idx]);
-      max_u0 = std::max(max_u0, u0[idx]);
-      min_u0 = std::min(min_u0, u0[idx]);
-      max_v0 = std::max(max_v0, v0[idx]);
-      min_v0 = std::min(min_v0, v0[idx]);
-      max_w0 = std::max(max_w0, w0[idx]);
-      min_w0 = std::min(min_w0, w0[idx]);
-      max_u1 = std::max(max_u1, u1[idx]);
-      min_u1 = std::min(min_u1, u1[idx]);
-      max_v1 = std::max(max_v1, v1[idx]);
-      min_v1 = std::min(min_v1, v1[idx]);
-      max_w1 = std::max(max_w1, w1[idx]);
-      min_w1 = std::min(min_w1, w1[idx]);
+      max_eta = std::max(max_eta, etal[idx]);
+      min_eta = std::min(min_eta, etal[idx]);
+      max_u0 = std::max(max_u0, u0l[idx]);
+      min_u0 = std::min(min_u0, u0l[idx]);
+      max_v0 = std::max(max_v0, v0l[idx]);
+      min_v0 = std::min(min_v0, v0l[idx]);
+      max_w0 = std::max(max_w0, w0l[idx]);
+      min_w0 = std::min(min_w0, w0l[idx]);
+      max_u1 = std::max(max_u1, u1l[idx]);
+      min_u1 = std::min(min_u1, u1l[idx]);
+      max_v1 = std::max(max_v1, v1l[idx]);
+      min_v1 = std::min(min_v1, v1l[idx]);
+      max_w1 = std::max(max_w1, w1l[idx]);
+      min_w1 = std::min(min_w1, w1l[idx]);
     }
   }
 

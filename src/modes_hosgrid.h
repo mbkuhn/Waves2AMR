@@ -1,5 +1,6 @@
 #ifndef MODES_HOSGRID_H
 #define MODES_HOSGRID_H
+#include "AMReX_Gpu.H"
 #include <complex>
 #include <fftw3.h>
 #include <vector>
@@ -21,14 +22,17 @@ fftw_complex *allocate_copy(int n0, int n1,
                             std::vector<std::complex<double>> complex_vector);
 
 void populate_hos_eta(int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
-                      std::vector<double> &HOS_eta);
+                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta);
+
 void populate_hos_vel(int n0, int n1, double xlen, double ylen, double depth,
                       double z, std::vector<std::complex<double>> mX_vector,
                       std::vector<std::complex<double>> mY_vector,
                       std::vector<std::complex<double>> mZ_vector, fftw_plan p,
                       fftw_complex *x_modes, fftw_complex *y_modes,
-                      fftw_complex *z_modes, std::vector<double> &HOS_u,
-                      std::vector<double> &HOS_v, std::vector<double> &HOS_w);
+                      fftw_complex *z_modes,
+                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
+                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_w);
 
 void do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in, double *sp_out);
 
