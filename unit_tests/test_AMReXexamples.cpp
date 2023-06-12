@@ -2,8 +2,6 @@
 #include "AMReX.H"
 #include "gtest/gtest.h"
 
-using namespace amrex;
-
 class AMReXExampleTest : public testing::Test {};
 
 // Not actually a test of the code, but a working example of AMReX steps
