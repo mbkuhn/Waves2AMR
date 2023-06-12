@@ -2,11 +2,16 @@
 #define AMREX_INTERFACE_OPS_H
 #include "AMReX_FArrayBox.H"
 #include <vector>
-using namespace amrex;
 namespace data_amrex {
 
-amrex::FArrayBox copy_to_fab(int n0, int n1, amrex::Real xlen, amrex::Real ylen,
-                             std::vector<double> input_vec);
+void copy_to_fab(int n0, int n1,
+                 amrex::Gpu::DeviceVector<amrex::Real> input_vec,
+                 amrex::FArrayBox &fab);
+
+/*amrex::FArrayBox copy_to_fab(int n0, int n1,
+                             amrex::Gpu::DeviceVector<amrex::Real> input_vec0,
+                             amrex::Gpu::DeviceVector<amrex::Real> input_vec1,
+                             amrex::Gpu::DeviceVector<amrex::Real> input_vec2);*/
 
 } // namespace data_amrex
 

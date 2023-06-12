@@ -1,6 +1,9 @@
 #include "../Waves2AMR.h"
 
-int main() {
+int main(int argc, char* argv[]) {
+  // Set up AMReX
+  amrex::Initialize(argc, argv, true, MPI_COMM_WORLD, []() {});
+
   // Name of modes file
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
   // Initialize mode reader
@@ -122,10 +125,19 @@ int main() {
   std::cout << "  v  : " << max_v1 << " " << min_v1 << std::endl;
   std::cout << "  w  : " << max_w1 << " " << min_w1 << std::endl;
 
+  // Transfer vector data to amrex FAB
+  amrex::FArrayBox eta_fab;
+  data_amrex::copy_to_fab(n0, n1, eta, eta_fab);
+  //auto u0_fab = data_amrex::copy_to_fab(n0, n1, u0, v0, w0);
+  //auto u1_fab = data_amrex::copy_to_fab(n0, n1, u1, v1, w1);
+
   // Delete ptrs and plan
   delete[] eta_modes;
   delete[] u_modes;
   delete[] v_modes;
   delete[] w_modes;
   fftw_destroy_plan(plan);
+
+  // Finalize AMReX
+  amrex::Finalize();
 }
