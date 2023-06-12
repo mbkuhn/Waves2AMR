@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include <array>
 
-namespace {
+namespace w2a_tests {
 
 class CombinedTest : public testing::Test {};
 
@@ -122,4 +122,4 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
   fftw_destroy_plan(plan);
 }
 
-} // namespace
+} // namespace w2a_tests

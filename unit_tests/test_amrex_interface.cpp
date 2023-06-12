@@ -3,7 +3,26 @@
 #include "AMReX_MultiFab.H"
 #include "gtest/gtest.h"
 
+namespace w2a_tests {
+
 namespace {
+amrex::Real sum_multifab(amrex::MultiFab &mf, int ncomp) {
+  amrex::Real f_sum = 0.0;
+  f_sum += amrex::ReduceSum(
+      mf, 0,
+      [=] AMREX_GPU_HOST_DEVICE(
+          amrex::Box const &bx,
+          amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
+        amrex::Real f_sum_fab = 0;
+        amrex::Loop(bx, ncomp,
+                    [=, &f_sum_fab](int i, int j, int k, int n) noexcept {
+                      f_sum_fab += fab_arr(i, j, k, n);
+                    });
+        return f_sum_fab;
+      });
+  return f_sum;
+}
+} // namespace
 
 class AMReXInterfaceTest : public testing::Test {};
 
@@ -42,18 +61,7 @@ TEST_F(AMReXInterfaceTest, 1D) {
   }
 
   // Sum over multifab
-  amrex::Real f_sum = 0.0;
-  f_sum += amrex::ReduceSum(
-      mf, 0,
-      [=] AMREX_GPU_HOST_DEVICE(
-          amrex::Box const &bx,
-          amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
-        amrex::Real f_sum_fab = 0;
-        amrex::Loop(bx, [=, &f_sum_fab](int i, int j, int k) noexcept {
-          f_sum_fab += fab_arr(i, j, k);
-        });
-        return f_sum_fab;
-      });
+  amrex::Real f_sum = sum_multifab(mf, 1);
 
   // Check result
   EXPECT_NEAR(f_sum, correct_sum, 1e-12);
@@ -104,22 +112,10 @@ TEST_F(AMReXInterfaceTest, 3D) {
   }
 
   // Sum over multifab
-  amrex::Real f_sum = 0.0;
-  f_sum += amrex::ReduceSum(
-      mf, 0,
-      [=] AMREX_GPU_HOST_DEVICE(
-          amrex::Box const &bx,
-          amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
-        amrex::Real f_sum_fab = 0;
-        amrex::Loop(bx, 3,
-                    [=, &f_sum_fab](int i, int j, int k, int n) noexcept {
-                      f_sum_fab += fab_arr(i, j, k, n);
-                    });
-        return f_sum_fab;
-      });
+  amrex::Real f_sum = sum_multifab(mf, 3);
 
   // Check result
   EXPECT_NEAR(f_sum, correct_sum, 1e-12);
 }
 
-} // namespace
+} // namespace w2a_tests

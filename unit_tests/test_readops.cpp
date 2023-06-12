@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include <array>
 
-namespace {
+namespace w2a_tests {
 
 class ReadOpsTest : public testing::Test {
 protected:
@@ -49,4 +49,4 @@ TEST_F(ReadOpsTest, Timestep) {
   EXPECT_EQ(itime, 10);
 }
 
-} // namespace
+} // namespace w2a_tests

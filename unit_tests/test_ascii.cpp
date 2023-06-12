@@ -2,6 +2,8 @@
 #include "gtest/gtest.h"
 #include <array>
 
+namespace w2a_test {
+
 namespace {
 
 std::array<double, 8> ModeSum(double time, double initval) {
@@ -73,6 +75,8 @@ std::array<double, 6> ModeSumBrief(double time, double initval) {
   return std::array<double, 6>{mX_sum,  mY_sum,   mZ_sum,
                                mFS_sum, mX_scndr, mX_scndi};
 }
+
+} // namespace
 
 class AsciiReadTest : public testing::Test {};
 
@@ -149,4 +153,4 @@ TEST_F(AsciiReadTest, Modes1) {
   EXPECT_EQ(sums[7], 6.6965350771E-20);
 }
 
-} // namespace
+} // namespace w2a_test

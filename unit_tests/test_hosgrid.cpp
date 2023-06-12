@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include <array>
 
-namespace {
+namespace w2a_tests {
 
 class HOSGridTest : public testing::Test {};
 
@@ -78,8 +78,8 @@ TEST_F(HOSGridTest, Sine) {
   // Solution should be sine curve
   for (int ix = 0; ix < nx; ++ix) {
     for (int iy = 0; iy < ny; ++iy) {
-      EXPECT_NEAR(sin(omega0 * (double)ix / (double)nx),
-                  vlocal[ix * ny + iy], 1e-15);
+      EXPECT_NEAR(sin(omega0 * (double)ix / (double)nx), vlocal[ix * ny + iy],
+                  1e-15);
     }
   }
 
@@ -141,4 +141,4 @@ TEST_F(HOSGridTest, Cosine) {
   fftw_destroy_plan(plan);
 }
 
-} // namespace
+} // namespace w2a_tests

@@ -4,7 +4,7 @@
 #include "gtest/gtest.h"
 #include <array>
 
-namespace {
+namespace aux_tests {
 
 class FFTExampleTest : public testing::Test {};
 
