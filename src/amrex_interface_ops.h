@@ -8,10 +8,11 @@ void copy_to_fab(int n0, int n1,
                  amrex::Gpu::DeviceVector<amrex::Real> input_vec,
                  amrex::FArrayBox &fab);
 
-/*amrex::FArrayBox copy_to_fab(int n0, int n1,
+void copy_to_fab(int n0, int n1,
                              amrex::Gpu::DeviceVector<amrex::Real> input_vec0,
                              amrex::Gpu::DeviceVector<amrex::Real> input_vec1,
-                             amrex::Gpu::DeviceVector<amrex::Real> input_vec2);*/
+                             amrex::Gpu::DeviceVector<amrex::Real> input_vec2,
+                             amrex::FArrayBox &fab);
 
 } // namespace data_amrex
 
