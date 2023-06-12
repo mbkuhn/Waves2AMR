@@ -6,6 +6,7 @@ target_sources(${exe_utest_name}
                test_hosgrid.cpp
                test_combined.cpp
                test_AMReXexamples.cpp
+               test_amrex_interface.cpp
                utest_main.cpp)
 target_include_directories(${exe_utest_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${exe_utest_name} PRIVATE gtest)
