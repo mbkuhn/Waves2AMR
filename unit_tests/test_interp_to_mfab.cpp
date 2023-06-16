@@ -57,4 +57,50 @@ TEST_F(InterpToMFabTest, create_height_vector) {
   // flag = 3 is hard to trigger without triggering flag = 1
 }
 
+TEST_F(InterpToMFabTest, get_local_height_indices) {
+  // Create height vector for test
+  int nheights = 5;
+  amrex::Vector<amrex::Real> hvec;
+  hvec.resize(nheights);
+  for (int n = 0; n < nheights; ++n) {
+    hvec[n] = 0.125 - 0.25 * (amrex::Real)n;
+  }
+
+  // Make index vector for in/out
+  amrex::Vector<int> indvec;
+
+  // Make vector of const multifabs (like an AMR-Wind field)
+  const int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},
+                                amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 3;
+  const int nghost = 3;
+  const amrex::MultiFab mf0(ba, dm, ncomp, nghost);
+  const amrex::MultiFab mf1(ba, dm, ncomp, nghost);
+  amrex::Vector<const amrex::MultiFab *> field_fabs{&mf0, &mf1};
+
+  // Make vectors of GpuArrays for geometry information
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{0.1, 0.1, 0.1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev1{0.05, 0.05, 0.05};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev0,
+                                                                 dx_lev1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_all, problo_all};
+
+  // Call function being tested
+  int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
+                                                      problo, dx);
+
+  // Check results
+  int indsize = indvec.size();
+  EXPECT_EQ(indsize, 4);
+  int ind = 0;
+  for (int n = 1; n < 5; ++n) {
+    EXPECT_EQ(n, indvec[ind]);
+    ++ind;
+  }
+}
+
 } // namespace w2a_tests

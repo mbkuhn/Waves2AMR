@@ -1,5 +1,9 @@
 #include "interp_to_mfab.h"
+#include <limits>
 
+// Using user-specified parameters, create a vector of z heights. These are
+// intended to be the heights where the IFFT is performed to get the velocity
+// field, which will then be interpolated to the mesh points.
 int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
                                          int n, const amrex::Real dz0,
                                          const amrex::Real z_wlev,
@@ -65,4 +69,63 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
   }
 
   return flag;
+}
+
+// Loop through the mfabs of a field to get which z heights are local to the
+// current process
+int interp_to_mfab::get_local_height_indices(
+    amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
+    amrex::Vector<const amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
+
+  // Size of hvec
+  int nheights = hvec.size();
+  // Number of levels
+  int nlevels = field_fabs.size();
+  // This library assumes height is in z (index of 2)
+  constexpr int idim = 2;
+
+  // Bounds of local AMR mesh
+  amrex::Real mesh_zlo = std::numeric_limits<double>::infinity();
+  amrex::Real mesh_zhi = -1. * std::numeric_limits<double>::infinity();
+
+  // Loop through levels and mfabs and get max/min bounds
+  for (int nl = 0; nl < nlevels; ++nl) {
+    for (amrex::MFIter mfi(*field_fabs[nl]); mfi.isValid(); ++mfi) {
+      const auto &bx = mfi.growntilebox();
+      const amrex::Real mfab_hi =
+          (problo_vec[nl])[idim] + bx.bigEnd(idim) * (dx_vec[nl])[idim];
+      const amrex::Real mfab_lo =
+          (problo_vec[nl])[idim] + bx.smallEnd(idim) * (dx_vec[nl])[idim];
+      mesh_zlo = std::min(mfab_lo, mesh_zlo);
+      mesh_zhi = std::max(mfab_hi, mesh_zhi);
+    }
+  }
+
+  // Loop through height vector and get first and last indices
+  int itop = -1; // top index is lowest ind, highest height
+  int ibtm = -1; // btm index is highest ind, lowest height
+  for (int nh = 0; nh < nheights; ++nh) {
+    if (itop == -1 && hvec[nh] <= mesh_zhi) {
+      itop = nh;
+      ibtm = itop;
+    }
+    if (ibtm != -1 && hvec[nh] >= mesh_zlo) {
+      ibtm = nh;
+    }
+  }
+
+  // If there are no overlapping points
+  if (itop + ibtm < 0) {
+    return 1;
+  }
+
+  // Make vector of indices
+  indvec.resize(ibtm - itop + 1);
+  for (int i = 0; i < ibtm - itop + 1; ++i) {
+    indvec[i] = itop + i;
+  }
+
+  return 0;
 }
