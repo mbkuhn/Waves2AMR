@@ -107,7 +107,7 @@ int interp_to_mfab::get_local_height_indices(
   int itop = -1; // top index is lowest ind, highest height
   int ibtm = -1; // btm index is highest ind, lowest height
   for (int nh = 0; nh < nheights; ++nh) {
-    if (itop == -1 && hvec[nh] <= mesh_zhi) {
+    if (itop == -1 && hvec[nh] <= mesh_zhi && hvec[nh] >= mesh_zlo) {
       itop = nh;
       ibtm = itop;
     }

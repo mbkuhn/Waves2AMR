@@ -101,6 +101,30 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
     EXPECT_EQ(n, indvec[ind]);
     ++ind;
   }
+
+  // Test scenario with partial overlap
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_po{0., 0., -0.3};
+  problo[0] = problo_po;
+  problo[1] = problo_po;
+  amrex::Vector<int> indvec_po;
+  flag = interp_to_mfab::get_local_height_indices(indvec_po, hvec, field_fabs,
+                                                      problo, dx);
+  indsize = indvec_po.size();
+  EXPECT_EQ(indsize, 3);
+  for (int n = 0; n < 3; ++n) {
+    EXPECT_EQ(n, indvec_po[n]);
+  }
+
+  // Test scenario with no overlap
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_no{0., 0., 0.5};
+  problo[0] = problo_no;
+  problo[1] = problo_no;
+  amrex::Vector<int> indvec_no;
+  flag = interp_to_mfab::get_local_height_indices(indvec_no, hvec, field_fabs,
+                                                      problo, dx);
+  indsize = indvec_no.size();
+  EXPECT_EQ(indsize, 0);
+  EXPECT_EQ(flag, 1);
 }
 
 } // namespace w2a_tests
