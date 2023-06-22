@@ -121,6 +121,10 @@ int interp_to_mfab::get_local_height_indices(
     return 1;
   }
 
+  // Expand indices to surround mfab points if possible
+  itop = amrex::max(0, itop - 1);
+  ibtm = amrex::min(ibtm + 1, nheights);
+
   // Make vector of indices
   indvec.resize(ibtm - itop + 1);
   for (int i = 0; i < ibtm - itop + 1; ++i) {

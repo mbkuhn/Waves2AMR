@@ -95,11 +95,9 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
 
   // Check results
   int indsize = indvec.size();
-  EXPECT_EQ(indsize, 4);
-  int ind = 0;
-  for (int n = 1; n < 5; ++n) {
-    EXPECT_EQ(n, indvec[ind]);
-    ++ind;
+  EXPECT_EQ(indsize, 6);
+  for (int n = 0; n < 6; ++n) {
+    EXPECT_EQ(n, indvec[n]);
   }
 
   // Test scenario with partial overlap
@@ -108,10 +106,10 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   problo[1] = problo_po;
   amrex::Vector<int> indvec_po;
   flag = interp_to_mfab::get_local_height_indices(indvec_po, hvec, field_fabs,
-                                                      problo, dx);
+                                                  problo, dx);
   indsize = indvec_po.size();
-  EXPECT_EQ(indsize, 3);
-  for (int n = 0; n < 3; ++n) {
+  EXPECT_EQ(indsize, 4);
+  for (int n = 0; n < 4; ++n) {
     EXPECT_EQ(n, indvec_po[n]);
   }
 
@@ -121,7 +119,7 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   problo[1] = problo_no;
   amrex::Vector<int> indvec_no;
   flag = interp_to_mfab::get_local_height_indices(indvec_no, hvec, field_fabs,
-                                                      problo, dx);
+                                                  problo, dx);
   indsize = indvec_no.size();
   EXPECT_EQ(indsize, 0);
   EXPECT_EQ(flag, 1);
