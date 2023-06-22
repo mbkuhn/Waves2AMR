@@ -1,6 +1,6 @@
 #include "../Waves2AMR.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   // Set up AMReX
   amrex::Initialize(argc, argv, true, MPI_COMM_WORLD, []() {});
 
@@ -130,6 +130,93 @@ int main(int argc, char* argv[]) {
   data_amrex::copy_to_fab(n0, n1, eta, eta_fab);
   data_amrex::copy_to_fab(n0, n1, u0, v0, w0, u0_fab);
   data_amrex::copy_to_fab(n0, n1, u1, v1, w1, u1_fab);
+
+  // --- Workflow for AMR-Wind --- //
+  // Create heights where velocity will be sampled
+  auto nheights = 40;
+  const amrex::Real r = 1.05;
+  const amrex::Real dz0 = 0.05;
+  amrex::Vector<amrex::Real> hvec;
+  int flag = interp_to_mfab::create_height_vector(hvec, nheights, dz0, 0.0,
+                                                  -depth * rmodes.get_L());
+  // Fail if flag indicates it should
+  if (flag > 0) {
+    amrex::Abort("create_height_vector error, failure code " +
+                 std::to_string(flag));
+  }
+  // Create vector of multifab to represent part of AMR-Wind mesh
+  int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 12 * nz},
+                                amrex::IntVect{nz - 1, nz - 1, 13 * nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 3;
+  const int nghost = 3;
+  // Just do one level in this test
+  const amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<const amrex::MultiFab *> field_fabs{&mf};
+
+  // Make vectors of GpuArrays for geometry information
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.1, 0.1, 0.1};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -10.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_all};
+
+  // Get indices of heights that overlap
+  amrex::Vector<int> indvec;
+  flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
+                                                  problo, dx);
+  // Flag should indicate that there are overlapping points
+  if (flag > 0) {
+    amrex::Abort(
+        "get_local_height_indices: no valid points between MF and hvec");
+  }
+
+  // Create vector of velocities to sample at each height
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_u_vec;
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_v_vec;
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_w_vec;
+  hos_u_vec.resize(indvec.size());
+  hos_v_vec.resize(indvec.size());
+  hos_w_vec.resize(indvec.size());
+
+  // Loop through heights to check and print
+  int n_hvec = 0;
+  int n_mfab = nz + nghost - 1;
+  int n_ivec = 0;
+  std::cout << std::endl << "Heights, descending order: \n";
+  for (int n = 0; n < nz + hvec.size(); ++n) {
+    const amrex::Real h_mfab = (problo[0])[2] + (dx[0])[2] * (12 * nz + n_mfab);
+    if (hvec[n_hvec] > h_mfab || n_mfab < -nghost) {
+      std::cout << "hvec " << n_hvec << " " << hvec[n_hvec];
+      if (n_ivec < indvec.size() && indvec[n_ivec] == n_hvec) {
+        std::cout << "          ivec " << n_ivec;
+        ++n_ivec;
+      }
+      std::cout << std::endl;
+      ++n_hvec;
+    } else {
+      std::cout << "mfab " << n_mfab << "            " << h_mfab << std::endl;
+      --n_mfab;
+    }
+  }
+
+  // Sample velocities
+  for (int iht = 0; iht < indvec.size(); ++iht) {
+    // Resize vector within vector
+    hos_u_vec[iht].resize(n0 * n1);
+    hos_v_vec[iht].resize(n0 * n1);
+    hos_w_vec[iht].resize(n0 * n1);
+    // Get sample height
+    amrex::Real ht = hvec[indvec[iht]];
+    // Sample velocity
+    modes_hosgrid::populate_hos_vel(
+        n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ, plan, u_modes, v_modes,
+        w_modes, hos_u_vec[iht], hos_v_vec[iht], hos_w_vec[iht]);
+    // Dimensionalize velocities (maybe should be included in populate?)
+  }
+
+  // Interpolate to multifab
 
   // Delete ptrs and plan
   delete[] eta_modes;
