@@ -125,4 +125,53 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   EXPECT_EQ(flag, 1);
 }
 
+TEST_F(InterpToMFabTest, linear_interp) {
+  // Test points directly
+  amrex::Real x1 = 1.0, y1 = 1.0, z1 = 1.0;
+  amrex::Real x0 = 0.0, y0 = 0.0, z0 = 0.0;
+  amrex::Real a = interp_to_mfab::linear_interp(
+      1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 1., 0., 0., 0., 0., 0., 0., 1., 0., 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 1., 0., 0., 0., 0., 0., 0., 1., 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 1.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 1., 0., 0., 0., 1., 1., 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 1., 0., 0., 1., 0., 1.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 0., 1., 0., 0., 1., 1.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  // Test line in each direction, interp and extrap
+  a = interp_to_mfab::linear_interp(1., 0., 0., 0., 0., 0., 0., 0., 0.5, 0., 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 0.5, 1e-15);
+  a = interp_to_mfab::linear_interp(1., 0., 0., 0., 0., 0., 0., 0., -0.5, 0.,
+                                    0., x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.5, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 1., 0., 0., 0., 0., 0., 0., 0.5, 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 0.5, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 1., 0., 0., 0., 0., 0., 0., 1.5, 0.,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 1.5, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 0.5,
+                                    x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, 0.5, 1e-15);
+  a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 0., 0., 1., 1., 1.,
+                                    -0.5, x0, y0, z0, x1, y1, z1);
+  EXPECT_NEAR(a, -0.5, 1e-15);
+}
+
 } // namespace w2a_tests
