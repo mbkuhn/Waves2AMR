@@ -161,9 +161,16 @@ void interp_to_mfab::interp_velocity_to_multifab(
       amrex::Array4<amrex::Real> varr = vlev.array(mfi);
       amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
         // Location of cell
-        const amrex::Real xc = problo[0] + (i + 0.5) * dx[0];
-        const amrex::Real yc = problo[1] + (j + 0.5) * dx[1];
+        amrex::Real xc = problo[0] + (i + 0.5) * dx[0];
+        amrex::Real yc = problo[1] + (j + 0.5) * dx[1];
         const amrex::Real zc = problo[2] + (k + 0.5) * dx[2];
+        // HOS data assumed to be periodic in x and y
+        const amrex::Real spd_Lx = spd_nx * spd_dx;
+        const amrex::Real spd_Ly = spd_ny * spd_dy;
+        xc = ((xc > spd_Lx) ? xc - spd_Lx : xc);
+        xc = ((xc < 0.) ? xc + spd_Lx : xc);
+        yc = ((yc > spd_Ly) ? yc - spd_Ly : yc);
+        yc = ((yc < 0.) ? yc + spd_Ly : yc);
         // Initial positions and indices of HOS spatial data vectors
         int i0 = xc / spd_dx;
         int j0 = yc / spd_dy;
@@ -174,7 +181,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         amrex::Real z0 = hvec[k_blw], z1 = hvec[k_abv];
         // Should there be an offset?
         // Get surrounding indices (go forward, go backward)
-        while (i0 < spd_nx - 1 && x0 - spd_dx < xc) {
+        while (i0 < spd_nx - 2 && x0 - spd_dx < xc) {
           ++i0;
           x0 = spd_dx * i0;
         }
@@ -182,7 +189,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
           --i0;
           x0 = spd_dx * i0;
         }
-        while (j0 < spd_ny - 1 && y0 - spd_dy < yc) {
+        while (j0 < spd_ny - 2 && y0 - spd_dy < yc) {
           ++j0;
           y0 = spd_dy * j0;
         }
@@ -191,7 +198,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
           y0 = spd_dy * j0;
         }
         // Heights are in descending order!!
-        while (k_abv < indvec[0] + nhts - 1 && hvec[k_abv + 1] > zc) {
+        while (k_abv < indvec[0] + nhts - 2 && hvec[k_abv + 1] > zc) {
           ++k_abv;
           z1 = hvec[k_abv];
         }
@@ -206,6 +213,9 @@ void interp_to_mfab::interp_velocity_to_multifab(
         y1 = spd_dy * j1;
         k_blw = k_abv + 1;
         z0 = hvec[k_blw];
+        // Periodicity for indices
+        i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
+        j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
         // Form indices for 1D vector of 2D data
         const int idx00 = i0 * spd_ny + j0;
         const int idx10 = i1 * spd_ny + j0;
