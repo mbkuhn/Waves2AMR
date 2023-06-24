@@ -152,8 +152,8 @@ int main(int argc, char *argv[]) {
   const int ncomp = 3;
   const int nghost = 3;
   // Just do one level in this test
-  const amrex::MultiFab mf(ba, dm, ncomp, nghost);
-  amrex::Vector<const amrex::MultiFab *> field_fabs{&mf};
+  amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
 
   // Make vectors of GpuArrays for geometry information
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.1, 0.1, 0.1};

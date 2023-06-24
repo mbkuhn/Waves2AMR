@@ -10,7 +10,7 @@ int create_height_vector(amrex::Vector<amrex::Real> &hvec, int n,
 
 int get_local_height_indices(
     amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
-    amrex::Vector<const amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::MultiFab *> field_fabs,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 
@@ -21,7 +21,7 @@ void interp_velocity_to_multifab(
     amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> uvec,
     amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> vvec,
     amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> wvec,
-    amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::MultiFab *> vfield,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 

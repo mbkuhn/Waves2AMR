@@ -4,7 +4,7 @@
 namespace w2a_tests {
 
 namespace {
-amrex::Real sum_multifab(amrex::MultiFab &mf, int ncomp) {
+amrex::Real sum_multifab(amrex::MultiFab &mf, int icomp) {
   amrex::Real f_sum = 0.0;
   f_sum += amrex::ReduceSum(
       mf, 0,
@@ -12,10 +12,9 @@ amrex::Real sum_multifab(amrex::MultiFab &mf, int ncomp) {
           amrex::Box const &bx,
           amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
         amrex::Real f_sum_fab = 0;
-        amrex::Loop(bx, ncomp,
-                    [=, &f_sum_fab](int i, int j, int k, int n) noexcept {
-                      f_sum_fab += fab_arr(i, j, k, n);
-                    });
+        amrex::Loop(bx, [=, &f_sum_fab](int i, int j, int k) noexcept {
+          f_sum_fab += fab_arr(i, j, k, icomp);
+        });
         return f_sum_fab;
       });
   return f_sum;
@@ -76,9 +75,9 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   amrex::DistributionMapping dm{ba};
   const int ncomp = 3;
   const int nghost = 3;
-  const amrex::MultiFab mf0(ba, dm, ncomp, nghost);
-  const amrex::MultiFab mf1(ba, dm, ncomp, nghost);
-  amrex::Vector<const amrex::MultiFab *> field_fabs{&mf0, &mf1};
+  amrex::MultiFab mf0(ba, dm, ncomp, nghost);
+  amrex::MultiFab mf1(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf0, &mf1};
 
   // Make vectors of GpuArrays for geometry information
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{0.1, 0.1, 0.1};
@@ -123,6 +122,66 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   indsize = indvec_no.size();
   EXPECT_EQ(indsize, 0);
   EXPECT_EQ(flag, 1);
+}
+
+TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
+  // Set up 2D dimensions
+  const int spd_nx = 10, spd_ny = 20;
+  const amrex::Real spd_dx = 0.1, spd_dy = 0.05;
+  // Set up heights
+  int nheights = 3;
+  amrex::Vector<amrex::Real> hvec;
+  hvec.resize(nheights);
+  hvec[0] = 0.0;
+  hvec[1] = -3. / 4.;
+  hvec[2] = -1.0;
+  // Set up velocity data
+  amrex::Gpu::DeviceVector<amrex::Real> dv2(spd_nx * spd_ny, 2.0);
+  amrex::Gpu::DeviceVector<amrex::Real> dv3(spd_nx * spd_ny, 3.0);
+  amrex::Gpu::DeviceVector<amrex::Real> dv4(spd_nx * spd_ny, 4.0);
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> uvec{dv2, dv2, dv2};
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> vvec{dv2, dv3, dv4};
+  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> wvec{dv4, dv4, dv3};
+  // Set up target mfabs and mesh
+  const int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},
+                                amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 3;
+  const int nghost = 3;
+  amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.125, 0.125, 0.125};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_lev{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_lev};
+  // Get indices
+  amrex::Vector<int> indvec;
+  int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
+                                                      problo, dx);
+  EXPECT_EQ(flag, 0);
+  // Perform interpolation
+  interp_to_mfab::interp_velocity_to_multifab(spd_nx, spd_ny, spd_dx, spd_dy,
+                                              indvec, hvec, uvec, vvec, wvec,
+                                              field_fabs, problo, dx);
+  // Check sum
+  const amrex::Real mf_sum_u = sum_multifab(*field_fabs[0], 0);
+  const amrex::Real mf_sum_v = sum_multifab(*field_fabs[0], 1);
+  const amrex::Real mf_sum_w = sum_multifab(*field_fabs[0], 2);
+  const amrex::Real u_sum = 2.0 * nz * nz * nz;
+  const amrex::Real v_sum =
+      ((2.0 + (4. / 3.) * (1. / 16.)) + (2.0 + (4. / 3.) * (3. / 16.)) +
+       (2.0 + (4. / 3.) * (5. / 16.)) + (2.0 + (4. / 3.) * (7. / 16.)) +
+       (2.0 + (4. / 3.) * (9. / 16.)) + (2.0 + (4. / 3.) * (11. / 16.)) +
+       (3.0 + (4. / 1.) * (1. / 16.)) + (3.0 + (4. / 1.) * (3. / 16.))) *
+      nz * nz;
+  const amrex::Real w_sum =
+      (6.0 * 4.0 + (4.0 - 1. / 4.) + (3.0 + 1. / 4.)) * nz * nz;
+  EXPECT_NEAR(mf_sum_u, u_sum, 1e-8);
+  EXPECT_NEAR(mf_sum_v, v_sum, 1e-8);
+  EXPECT_NEAR(mf_sum_w, w_sum, 1e-8);
+  //  Note: this only checks variation in z
 }
 
 TEST_F(InterpToMFabTest, linear_interp) {

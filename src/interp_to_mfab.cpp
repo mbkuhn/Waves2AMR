@@ -76,7 +76,7 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
 // current process
 int interp_to_mfab::get_local_height_indices(
     amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
-    amrex::Vector<const amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::MultiFab *> field_fabs,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
 
@@ -124,7 +124,7 @@ int interp_to_mfab::get_local_height_indices(
 
   // Expand indices to surround mfab points if possible
   itop = amrex::max(0, itop - 1);
-  ibtm = amrex::min(ibtm + 1, nheights);
+  ibtm = amrex::min(ibtm + 1, nheights - 1);
 
   // Make vector of indices
   indvec.resize(ibtm - itop + 1);
@@ -210,7 +210,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         const int idx00 = i0 * spd_ny + j0;
         const int idx10 = i1 * spd_ny + j0;
         const int idx01 = i0 * spd_ny + j1;
-        const int idx11 = i0 * spd_ny + j1;
+        const int idx11 = i1 * spd_ny + j1;
         // Get surrounding data (ijk) = [k][ij]
         const amrex::Real u000 = (uvec[k_blw])[idx00];
         const amrex::Real u100 = (uvec[k_blw])[idx10];
