@@ -19,6 +19,7 @@ option(WAVES2AMR_ENABLE_FCOMPARE "Enable FCompare" OFF)
 option(WAVES2AMR_ENABLE_CUDA "Enable CUDA" OFF)
 option(WAVES2AMR_ENABLE_ROCM "Enable ROCm/HIP" OFF)
 option(WAVES2AMR_ENABLE_SYCL "Enable Intel OneAPI SyCL" OFF)
+option(WAVES2AMR_ENABLE_TINY_PROFILE "Enable AMReX TinyProfile support" OFF)
 
 # Target names
 set(exe_base "Waves2AMR")
