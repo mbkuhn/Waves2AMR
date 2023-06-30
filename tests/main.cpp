@@ -125,12 +125,6 @@ int main(int argc, char *argv[]) {
   std::cout << "  v  : " << max_v1 << " " << min_v1 << std::endl;
   std::cout << "  w  : " << max_w1 << " " << min_w1 << std::endl;
 
-  // Transfer vector data to amrex FAB
-  amrex::FArrayBox eta_fab, u0_fab, u1_fab;
-  data_amrex::copy_to_fab(n0, n1, eta, eta_fab);
-  data_amrex::copy_to_fab(n0, n1, u0, v0, w0, u0_fab);
-  data_amrex::copy_to_fab(n0, n1, u1, v1, w1, u1_fab);
-
   // --- Workflow for AMR-Wind --- //
   // Create heights where velocity will be sampled
   auto nheights = 40;

@@ -3,7 +3,6 @@
 // All headers from src
 #include "src/read_modes.h"
 #include "src/modes_hosgrid.h"
-#include "src/amrex_interface_ops.h"
 #include "src/interp_to_mfab.h"
 
 #endif
