@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
   const int nghost = 3;
   // Just do one level in this test
   amrex::MultiFab mf(ba, dm, ncomp, nghost);
-  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
+  amrex::Vector<amrex::MultiFab *> velocity_field{&mf};
 
   // Make vectors of GpuArrays for geometry information
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.1, 0.1, 0.1};
@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 
   // Get indices of heights that overlap
   amrex::Vector<int> indvec;
-  flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
+  flag = interp_to_mfab::get_local_height_indices(indvec, hvec, velocity_field,
                                                   problo, dx);
   // Flag should indicate that there are overlapping points
   if (flag > 0) {
@@ -217,6 +217,11 @@ int main(int argc, char *argv[]) {
   }
 
   // Interpolate to multifab
+  const amrex::Real spd_dx = xlen / n0;
+  const amrex::Real spd_dy = ylen / n1;
+  interp_to_mfab::interp_velocity_to_multifab(
+      n0, n1, spd_dx, spd_dy, indvec, hvec, hos_u_vec, hos_v_vec, hos_w_vec,
+      velocity_field, problo, dx);
 
   // Delete ptrs and plan
   delete[] eta_modes;
