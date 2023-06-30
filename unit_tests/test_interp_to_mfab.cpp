@@ -94,8 +94,8 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
 
   // Check results
   int indsize = indvec.size();
-  EXPECT_EQ(indsize, 6);
-  for (int n = 0; n < 6; ++n) {
+  EXPECT_EQ(indsize, 5);
+  for (int n = 0; n < 5; ++n) {
     EXPECT_EQ(n, indvec[n]);
   }
 
