@@ -1,6 +1,6 @@
 ## This executable is just for making sure the setup can compile and run
 cmake_minimum_required (VERSION 3.14 FATAL_ERROR)
-set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+set(CMAKE_CXX_COMPILER "g++")
 
 # Compiler flags
 if(NOT CMAKE_BUILD_TYPE)
