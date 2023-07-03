@@ -49,7 +49,7 @@ target_link_libraries(${exe_lib} ${fftw_lib})
 add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
 target_link_libraries(${exe_name} ${fftw_lib})
 
-include(amrex_utils.cmake)
+include(utils.cmake)
 if (WAVES2AMR_ENABLE_CUDA)
   enable_language(CUDA)
   set(w2atargets "${exe_lib};${exe_name}")
