@@ -20,6 +20,7 @@ option(WAVES2AMR_ENABLE_CUDA "Enable CUDA" OFF)
 option(WAVES2AMR_ENABLE_ROCM "Enable ROCm/HIP" OFF)
 option(WAVES2AMR_ENABLE_SYCL "Enable Intel OneAPI SyCL" OFF)
 option(WAVES2AMR_ENABLE_TINY_PROFILE "Enable AMReX TinyProfile support" OFF)
+option(WAVES2AMR_ENABLE_UNIT_TESTS "Enable unit testing" ON)
 
 # Target names
 set(exe_base "Waves2AMR")
@@ -63,9 +64,7 @@ target_link_libraries(${exe_base} AMReX::amrex)
 target_link_libraries(${exe_lib} AMReX::amrex)
 target_link_libraries(${exe_name} AMReX::amrex)
 
-option(ENABLE_UNIT_TESTS "Enable unit testing" ON)
-
-if(ENABLE_UNIT_TESTS)
+if(WAVES2AMR_ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
   add_subdirectory("submods/googletest")
   add_subdirectory("unit_tests")
