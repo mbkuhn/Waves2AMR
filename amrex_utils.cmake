@@ -7,6 +7,16 @@ function(target_link_libraries_system target visibility)
   endforeach(lib)
 endfunction(target_link_libraries_system)
 
+function(set_cuda_build_properties target)
+  if (WAVES2AMR_ENABLE_CUDA)
+    get_target_property(_tgt_src ${target} SOURCES)
+    list(FILTER _tgt_src INCLUDE REGEX "\\.cpp")
+    set_source_files_properties(${_tgt_src} PROPERTIES LANGUAGE CUDA)
+    set_target_properties(${target} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    set_target_properties(${target} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  endif()
+endfunction(set_cuda_build_properties)
+
 macro(amrex_options)
 #Set amrex options
   set(USE_XSDK_DEFAULTS OFF)

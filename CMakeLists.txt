@@ -48,8 +48,16 @@ target_link_libraries(${exe_lib} ${fftw_lib})
 add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
 target_link_libraries(${exe_name} ${fftw_lib})
 
-# AMReX
 include(amrex_utils.cmake)
+if (WAVES2AMR_ENABLE_CUDA)
+  enable_language(CUDA)
+  set(w2atargets "${exe_lib};${exe_name}")
+  foreach(tgt IN LISTS w2atargets)
+    set_cuda_build_properties(${tgt})
+  endforeach()
+endif()
+
+# AMReX
 init_amrex()
 target_link_libraries(${exe_base} AMReX::amrex)
 target_link_libraries(${exe_lib} AMReX::amrex)
@@ -61,4 +69,5 @@ if(ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
   add_subdirectory("submods/googletest")
   add_subdirectory("unit_tests")
+  set_cuda_build_properties(${exe_utest_name})
 endif()
