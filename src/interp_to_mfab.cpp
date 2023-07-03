@@ -32,7 +32,6 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
   amrex::Real r = 1.05;
   amrex::Real err = 1.0;
   constexpr amrex::Real tol = 1e-2;
-  constexpr int iter_max = 1000;
   {
     int iter = 0;
     while (iter < 1000 && err > 1e-2) {

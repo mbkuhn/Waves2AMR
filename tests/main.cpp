@@ -128,7 +128,6 @@ int main(int argc, char *argv[]) {
   // --- Workflow for AMR-Wind --- //
   // Create heights where velocity will be sampled
   auto nheights = 40;
-  const amrex::Real r = 1.05;
   const amrex::Real dz0 = 0.05;
   amrex::Vector<amrex::Real> hvec;
   int flag = interp_to_mfab::create_height_vector(hvec, nheights, dz0, 0.0,

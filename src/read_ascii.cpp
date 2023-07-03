@@ -41,7 +41,6 @@ void ReadModes::ascii_read_full(int itime) {
     i1_init = 5;
     is.ignore(18 * 10);
     for (int i1 = 0; i1 < i1_init; ++i1) {
-      double buf1, buf2;
       modeX[i1].real(0.0);
       modeX[i1].imag(0.0);
     }
@@ -98,7 +97,6 @@ void ReadModes::ascii_read_brief(int itime) {
     i1_init = 5;
     is.ignore(18 * 10);
     for (int i1 = 0; i1 < i1_init; ++i1) {
-      double buf1, buf2;
       modeX[i1].real(0.0);
       modeX[i1].imag(0.0);
     }
