@@ -138,10 +138,9 @@ int interp_to_mfab::get_local_height_indices(
 void interp_to_mfab::interp_velocity_to_multifab(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
     const amrex::Real spd_dy, amrex::Vector<int> indvec,
-    amrex::Vector<amrex::Real> hvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> uvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> vvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> wvec,
+    amrex::Vector<amrex::Real> hvec, amrex::Gpu::DeviceVector<amrex::Real> uvec,
+    amrex::Gpu::DeviceVector<amrex::Real> vvec,
+    amrex::Gpu::DeviceVector<amrex::Real> wvec,
     amrex::Vector<amrex::MultiFab *> vfield,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
@@ -215,36 +214,40 @@ void interp_to_mfab::interp_velocity_to_multifab(
         // Periodicity for indices
         i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
         j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
-        // Form indices for 1D vector of 2D data
-        const int idx00 = i0 * spd_ny + j0;
-        const int idx10 = i1 * spd_ny + j0;
-        const int idx01 = i0 * spd_ny + j1;
-        const int idx11 = i1 * spd_ny + j1;
-        // Get surrounding data (ijk) = [k][ij]
-        const amrex::Real u000 = (uvec[k_blw])[idx00];
-        const amrex::Real u100 = (uvec[k_blw])[idx10];
-        const amrex::Real u010 = (uvec[k_blw])[idx01];
-        const amrex::Real u001 = (uvec[k_abv])[idx00];
-        const amrex::Real u110 = (uvec[k_blw])[idx11];
-        const amrex::Real u101 = (uvec[k_abv])[idx10];
-        const amrex::Real u011 = (uvec[k_abv])[idx01];
-        const amrex::Real u111 = (uvec[k_abv])[idx11];
-        const amrex::Real v000 = (vvec[k_blw])[idx00];
-        const amrex::Real v100 = (vvec[k_blw])[idx10];
-        const amrex::Real v010 = (vvec[k_blw])[idx01];
-        const amrex::Real v001 = (vvec[k_abv])[idx00];
-        const amrex::Real v110 = (vvec[k_blw])[idx11];
-        const amrex::Real v101 = (vvec[k_abv])[idx10];
-        const amrex::Real v011 = (vvec[k_abv])[idx01];
-        const amrex::Real v111 = (vvec[k_abv])[idx11];
-        const amrex::Real w000 = (wvec[k_blw])[idx00];
-        const amrex::Real w100 = (wvec[k_blw])[idx10];
-        const amrex::Real w010 = (wvec[k_blw])[idx01];
-        const amrex::Real w001 = (wvec[k_abv])[idx00];
-        const amrex::Real w110 = (wvec[k_blw])[idx11];
-        const amrex::Real w101 = (wvec[k_abv])[idx10];
-        const amrex::Real w011 = (wvec[k_abv])[idx01];
-        const amrex::Real w111 = (wvec[k_abv])[idx11];
+        // Form indices for 1D vector of 3D data
+        const int idx000 = k_blw * spd_nx * spd_ny + i0 * spd_ny + j0;
+        const int idx100 = k_blw * spd_nx * spd_ny + i1 * spd_ny + j0;
+        const int idx010 = k_blw * spd_nx * spd_ny + i0 * spd_ny + j1;
+        const int idx110 = k_blw * spd_nx * spd_ny + i1 * spd_ny + j1;
+        const int idx001 = k_abv * spd_nx * spd_ny + i0 * spd_ny + j0;
+        const int idx101 = k_abv * spd_nx * spd_ny + i1 * spd_ny + j0;
+        const int idx011 = k_abv * spd_nx * spd_ny + i0 * spd_ny + j1;
+        const int idx111 = k_abv * spd_nx * spd_ny + i1 * spd_ny + j1;
+        // Get surrounding data
+        const amrex::Real u000 = uvec[idx000];
+        const amrex::Real u100 = uvec[idx100];
+        const amrex::Real u010 = uvec[idx010];
+        const amrex::Real u001 = uvec[idx001];
+        const amrex::Real u110 = uvec[idx110];
+        const amrex::Real u101 = uvec[idx101];
+        const amrex::Real u011 = uvec[idx011];
+        const amrex::Real u111 = uvec[idx111];
+        const amrex::Real v000 = vvec[idx000];
+        const amrex::Real v100 = vvec[idx100];
+        const amrex::Real v010 = vvec[idx010];
+        const amrex::Real v001 = vvec[idx001];
+        const amrex::Real v110 = vvec[idx110];
+        const amrex::Real v101 = vvec[idx101];
+        const amrex::Real v011 = vvec[idx011];
+        const amrex::Real v111 = vvec[idx111];
+        const amrex::Real w000 = wvec[idx000];
+        const amrex::Real w100 = wvec[idx100];
+        const amrex::Real w010 = wvec[idx010];
+        const amrex::Real w001 = wvec[idx001];
+        const amrex::Real w110 = wvec[idx110];
+        const amrex::Real w101 = wvec[idx101];
+        const amrex::Real w011 = wvec[idx011];
+        const amrex::Real w111 = wvec[idx111];
         // Interpolate and store
         varr(i, j, k, 0) =
             linear_interp(u000, u100, u010, u001, u110, u101, u011, u111, xc,

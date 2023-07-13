@@ -77,7 +77,7 @@ void modes_hosgrid::populate_hos_vel(
     fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
-    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w) {
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
   // Reused constants (lengths are nondim)
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
@@ -143,19 +143,20 @@ void modes_hosgrid::populate_hos_vel(
     }
   }
   // Output pointer
-  auto out = new double[HOS_u.size()];
+  int xy_size = n0 * n1;
+  auto out = new double[xy_size];
   // Perform inverse fft
   do_ifftw(n0, n1, p, x_modes, &out[0]);
   // Copy to output vectors
-  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_u.size(),
-                   HOS_u.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + xy_size,
+                   &HOS_u[indv_start]);
   // Repeat in other directions
   do_ifftw(n0, n1, p, y_modes, &out[0]);
-  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_v.size(),
-                   HOS_v.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + xy_size,
+                   &HOS_v[indv_start]);
   do_ifftw(n0, n1, p, z_modes, &out[0]);
-  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + HOS_w.size(),
-                   HOS_w.begin());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, &out[0], &out[0] + xy_size,
+                   &HOS_w[indv_start]);
 }
 
 void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in,

@@ -139,9 +139,22 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
   amrex::Gpu::DeviceVector<amrex::Real> dv2(spd_nx * spd_ny, 2.0);
   amrex::Gpu::DeviceVector<amrex::Real> dv3(spd_nx * spd_ny, 3.0);
   amrex::Gpu::DeviceVector<amrex::Real> dv4(spd_nx * spd_ny, 4.0);
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> uvec{dv2, dv2, dv2};
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> vvec{dv2, dv3, dv4};
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> wvec{dv4, dv4, dv3};
+  amrex::Gpu::DeviceVector<amrex::Real> uvec; //{dv2, dv2, dv2};
+  amrex::Gpu::DeviceVector<amrex::Real> vvec; //{dv2, dv3, dv4};
+  amrex::Gpu::DeviceVector<amrex::Real> wvec; //{dv4, dv4, dv3};
+  // U velocity is dv2 at all three heights
+  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
+  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
+  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
+  // V velocity is {dv2, dv3, dv4}
+  vvec.insert(vvec.end(),dv2.begin(),dv2.end());
+  vvec.insert(vvec.end(),dv3.begin(),dv3.end());
+  vvec.insert(vvec.end(),dv4.begin(),dv4.end());
+  // W velocity is {dv4, dv4, dv3}
+  wvec.insert(wvec.end(),dv4.begin(),dv4.end());
+  wvec.insert(wvec.end(),dv4.begin(),dv4.end());
+  wvec.insert(wvec.end(),dv3.begin(),dv3.end());
+
   // Set up target mfabs and mesh
   const int nz = 8;
   amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},

@@ -32,7 +32,8 @@ void populate_hos_vel(int n0, int n1, double xlen, double ylen, double depth,
                       fftw_complex *z_modes,
                       amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
                       amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
-                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_w);
+                      amrex::Gpu::DeviceVector<amrex::Real> &HOS_w,
+                      int indv_start = 0);
 
 void do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in, double *sp_out);
 

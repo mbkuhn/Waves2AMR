@@ -165,13 +165,10 @@ int main(int argc, char *argv[]) {
         "get_local_height_indices: no valid points between MF and hvec");
   }
 
-  // Create vector of velocities to sample at each height
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_u_vec;
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_v_vec;
-  amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> hos_w_vec;
-  hos_u_vec.resize(indvec.size());
-  hos_v_vec.resize(indvec.size());
-  hos_w_vec.resize(indvec.size());
+  // Create vector of velocities to sample
+  amrex::Gpu::DeviceVector<amrex::Real> hos_u_vec;
+  amrex::Gpu::DeviceVector<amrex::Real> hos_v_vec;
+  amrex::Gpu::DeviceVector<amrex::Real> hos_w_vec;
 
   // Loop through heights to check and print
   int n_hvec = 0;
@@ -194,18 +191,20 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // Resize 1D velocity vectors
+  int nht = indvec.size();
+  hos_u_vec.resize(n0 * n1 * nht);
+  hos_v_vec.resize(n0 * n1 * nht);
+  hos_w_vec.resize(n0 * n1 * nht);
   // Sample velocities
-  for (int iht = 0; iht < indvec.size(); ++iht) {
-    // Resize vector within vector
-    hos_u_vec[iht].resize(n0 * n1);
-    hos_v_vec[iht].resize(n0 * n1);
-    hos_w_vec[iht].resize(n0 * n1);
+  int indv = 0;
+  for (int iht = 0; iht < nht; ++iht) {
     // Get sample height
     amrex::Real ht = hvec[indvec[iht]];
     // Sample velocity
-    modes_hosgrid::populate_hos_vel(
-        n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ, plan, u_modes, v_modes,
-        w_modes, hos_u_vec[iht], hos_v_vec[iht], hos_w_vec[iht]);
+    modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
+                                    plan, u_modes, v_modes, w_modes, hos_u_vec,
+                                    hos_v_vec, hos_w_vec, indv);
     // Dimensionalize velocities (maybe should be included in populate?)
   }
 

@@ -18,9 +18,9 @@ void interp_velocity_to_multifab(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
     const amrex::Real spd_dy, amrex::Vector<int> indvec,
     amrex::Vector<amrex::Real> hvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> uvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> vvec,
-    amrex::Vector<amrex::Gpu::DeviceVector<amrex::Real>> wvec,
+    amrex::Gpu::DeviceVector<amrex::Real> uvec,
+    amrex::Gpu::DeviceVector<amrex::Real> vvec,
+    amrex::Gpu::DeviceVector<amrex::Real> wvec,
     amrex::Vector<amrex::MultiFab *> vfield,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
