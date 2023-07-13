@@ -214,7 +214,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
           ++k_abv;
           z1 = hvec_ptr[k_abv];
         }
-        while (k_abv > indvec[0] && z1 < zc) {
+        while (k_abv > indvec_ptr[0] && z1 < zc) {
           --k_abv;
           z1 = hvec_ptr[k_abv];
         }
