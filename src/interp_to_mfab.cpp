@@ -149,6 +149,20 @@ void interp_to_mfab::interp_velocity_to_multifab(
   int nlevels = vfield.size();
   // Number of heights relevant to this processor
   int nhts = indvec.size();
+  // Copy hvec and indvec to device
+  amrex::Gpu::DeviceVector<int> indvec_dvc(indvec.size());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, indvec.begin(), indvec.end(),
+                   indvec_dvc.begin());
+  amrex::Gpu::DeviceVector<amrex::Real> hvec_dvc(hvec.size());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, hvec.begin(), hvec.end(),
+                   hvec_dvc.begin());
+  // Get pointers to device vectors
+  auto *indvec_ptr = indvec_dvc.data();
+  auto *hvec_ptr = hvec_dvc.data();
+  auto *uvec_ptr = uvec.data();
+  auto *vvec_ptr = vvec.data();
+  auto *wvec_ptr = wvec.data();
+
   // Loop through cells and perform interpolation
   for (int nl = 0; nl < nlevels; ++nl) {
     auto &vlev = *(vfield[nl]);
@@ -172,11 +186,11 @@ void interp_to_mfab::interp_velocity_to_multifab(
         // Initial positions and indices of HOS spatial data vectors
         int i0 = xc / spd_dx;
         int j0 = yc / spd_dy;
-        int k_abv = indvec[0];
+        int k_abv = indvec_ptr[0];
         int i1 = i0 + 1, j1 = j0 + 1, k_blw = k_abv + 1;
         amrex::Real x0 = spd_dx * i0, x1 = spd_dx * i1;
         amrex::Real y0 = spd_dy * j0, y1 = spd_dy * j1;
-        amrex::Real z0 = hvec[k_blw], z1 = hvec[k_abv];
+        amrex::Real z0 = hvec_ptr[k_blw], z1 = hvec_ptr[k_abv];
         // Should there be an offset?
         // Get surrounding indices (go forward, go backward)
         while (i0 < spd_nx - 2 && x0 - spd_dx < xc) {
@@ -196,13 +210,13 @@ void interp_to_mfab::interp_velocity_to_multifab(
           y0 = spd_dy * j0;
         }
         // Heights are in descending order!!
-        while (k_abv < indvec[0] + nhts - 2 && hvec[k_abv + 1] > zc) {
+        while (k_abv < indvec_ptr[0] + nhts - 2 && hvec_ptr[k_abv + 1] > zc) {
           ++k_abv;
-          z1 = hvec[k_abv];
+          z1 = hvec_ptr[k_abv];
         }
         while (k_abv > indvec[0] && z1 < zc) {
           --k_abv;
-          z1 = hvec[k_abv];
+          z1 = hvec_ptr[k_abv];
         }
         // Get points above
         i1 = i0 + 1;
@@ -210,7 +224,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         j1 = j0 + 1;
         y1 = spd_dy * j1;
         k_blw = k_abv + 1;
-        z0 = hvec[k_blw];
+        z0 = hvec_ptr[k_blw];
         // Periodicity for indices
         i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
         j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
@@ -224,30 +238,30 @@ void interp_to_mfab::interp_velocity_to_multifab(
         const int idx011 = k_abv * spd_nx * spd_ny + i0 * spd_ny + j1;
         const int idx111 = k_abv * spd_nx * spd_ny + i1 * spd_ny + j1;
         // Get surrounding data
-        const amrex::Real u000 = uvec[idx000];
-        const amrex::Real u100 = uvec[idx100];
-        const amrex::Real u010 = uvec[idx010];
-        const amrex::Real u001 = uvec[idx001];
-        const amrex::Real u110 = uvec[idx110];
-        const amrex::Real u101 = uvec[idx101];
-        const amrex::Real u011 = uvec[idx011];
-        const amrex::Real u111 = uvec[idx111];
-        const amrex::Real v000 = vvec[idx000];
-        const amrex::Real v100 = vvec[idx100];
-        const amrex::Real v010 = vvec[idx010];
-        const amrex::Real v001 = vvec[idx001];
-        const amrex::Real v110 = vvec[idx110];
-        const amrex::Real v101 = vvec[idx101];
-        const amrex::Real v011 = vvec[idx011];
-        const amrex::Real v111 = vvec[idx111];
-        const amrex::Real w000 = wvec[idx000];
-        const amrex::Real w100 = wvec[idx100];
-        const amrex::Real w010 = wvec[idx010];
-        const amrex::Real w001 = wvec[idx001];
-        const amrex::Real w110 = wvec[idx110];
-        const amrex::Real w101 = wvec[idx101];
-        const amrex::Real w011 = wvec[idx011];
-        const amrex::Real w111 = wvec[idx111];
+        const amrex::Real u000 = uvec_ptr[idx000];
+        const amrex::Real u100 = uvec_ptr[idx100];
+        const amrex::Real u010 = uvec_ptr[idx010];
+        const amrex::Real u001 = uvec_ptr[idx001];
+        const amrex::Real u110 = uvec_ptr[idx110];
+        const amrex::Real u101 = uvec_ptr[idx101];
+        const amrex::Real u011 = uvec_ptr[idx011];
+        const amrex::Real u111 = uvec_ptr[idx111];
+        const amrex::Real v000 = vvec_ptr[idx000];
+        const amrex::Real v100 = vvec_ptr[idx100];
+        const amrex::Real v010 = vvec_ptr[idx010];
+        const amrex::Real v001 = vvec_ptr[idx001];
+        const amrex::Real v110 = vvec_ptr[idx110];
+        const amrex::Real v101 = vvec_ptr[idx101];
+        const amrex::Real v011 = vvec_ptr[idx011];
+        const amrex::Real v111 = vvec_ptr[idx111];
+        const amrex::Real w000 = wvec_ptr[idx000];
+        const amrex::Real w100 = wvec_ptr[idx100];
+        const amrex::Real w010 = wvec_ptr[idx010];
+        const amrex::Real w001 = wvec_ptr[idx001];
+        const amrex::Real w110 = wvec_ptr[idx110];
+        const amrex::Real w101 = wvec_ptr[idx101];
+        const amrex::Real w011 = wvec_ptr[idx011];
+        const amrex::Real w111 = wvec_ptr[idx111];
         // Interpolate and store
         varr(i, j, k, 0) =
             linear_interp(u000, u100, u010, u001, u110, u101, u011, u111, xc,
@@ -263,7 +277,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
   }
 }
 
-amrex::Real interp_to_mfab::linear_interp(
+AMREX_GPU_HOST_DEVICE amrex::Real interp_to_mfab::linear_interp(
     const amrex::Real a000, const amrex::Real a100, const amrex::Real a010,
     const amrex::Real a001, const amrex::Real a110, const amrex::Real a101,
     const amrex::Real a011, const amrex::Real a111, const amrex::Real xc,
