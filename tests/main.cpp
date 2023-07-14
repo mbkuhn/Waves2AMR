@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   amrex::Gpu::DeviceVector<amrex::Real> w1(n0 * n1, 0.0);
 
   // Perform fftw for eta
-  modes_hosgrid::populate_hos_eta(n0, n1, plan, eta_modes, eta);
+  modes_hosgrid::populate_hos_eta_nondim(n0, n1, plan, eta_modes, eta);
   // Get nondim dimensions
   double depth = rmodes.get_depth();
   double xlen = rmodes.get_xlen();
@@ -54,12 +54,12 @@ int main(int argc, char *argv[]) {
 
   // Perform fftw for velocity at one height
   double ht0 = -0.75325763322349282;
-  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
+  modes_hosgrid::populate_hos_vel_nondim(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
                                   plan, u_modes, v_modes, w_modes, u0, v0, w0);
 
   // Perform fftw for velocity at another height
   double ht1 = -1.3822500981745969;
-  modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht1, mX, mY, mZ,
+  modes_hosgrid::populate_hos_vel_nondim(n0, n1, xlen, ylen, depth, ht1, mX, mY, mZ,
                                   plan, u_modes, v_modes, w_modes, u1, v1, w1);
 
   // Transfer to host
@@ -202,14 +202,14 @@ int main(int argc, char *argv[]) {
     // Get sample height
     amrex::Real ht = hvec[indvec[iht]];
     // Sample velocity
-    modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
+    modes_hosgrid::populate_hos_vel_nondim(n0, n1, xlen, ylen, depth, ht0, mX, mY, mZ,
                                     plan, u_modes, v_modes, w_modes, hos_u_vec,
                                     hos_v_vec, hos_w_vec, indv);
     // Dimensionalize velocities (maybe should be included in populate?)
   }
 
   // Interpolate to multifab
-  const amrex::Real spd_dx = xlen / n0;
+  const amrex::Real spd_dx = xlen / n0; // dimensional question here too!
   const amrex::Real spd_dy = ylen / n1;
   interp_to_mfab::interp_velocity_to_multifab(
       n0, n1, spd_dx, spd_dy, indvec, hvec, hos_u_vec, hos_v_vec, hos_w_vec,

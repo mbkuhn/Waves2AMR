@@ -67,7 +67,7 @@ TEST_F(HOSGridTest, Sine) {
   // Set up output vector
   amrex::Gpu::DeviceVector<amrex::Real> spatial2D(nx * ny, 0.0);
   // Perform fftw
-  modes_hosgrid::populate_hos_eta(nx, ny, plan, ptr_modes, spatial2D);
+  modes_hosgrid::populate_hos_eta_nondim(nx, ny, plan, ptr_modes, spatial2D);
 
   // Copy from device to host
   std::vector<amrex::Real> vlocal;
@@ -118,7 +118,7 @@ TEST_F(HOSGridTest, Cosine) {
   // Setup output vector
   amrex::Gpu::DeviceVector<amrex::Real> spatial2D(nx * ny, 0.0);
   // Perform fftw
-  modes_hosgrid::populate_hos_eta(nx, ny, plan, ptr_modes, spatial2D);
+  modes_hosgrid::populate_hos_eta_nondim(nx, ny, plan, ptr_modes, spatial2D);
 
   // Copy from device to host
   std::vector<amrex::Real> vlocal;
@@ -140,5 +140,7 @@ TEST_F(HOSGridTest, Cosine) {
   // Delete plan
   fftw_destroy_plan(plan);
 }
+
+// Should add tests for dimensionalize functions
 
 } // namespace w2a_tests

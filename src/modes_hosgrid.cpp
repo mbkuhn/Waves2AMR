@@ -54,6 +54,17 @@ modes_hosgrid::allocate_copy(int n0, int n1,
 }
 
 void modes_hosgrid::populate_hos_eta(
+    int n0, int n1, const double dimL, fftw_plan p, fftw_complex *eta_modes,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
+
+  // Get nondimensional interface height (eta)
+  populate_hos_eta_nondim(n0, n1, p, eta_modes, HOS_eta);
+
+  // Dimensionalize the interface height
+  dimensionalize_eta(dimL, HOS_eta);
+}
+
+void modes_hosgrid::populate_hos_eta_nondim(
     int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
   // Local array for output data
@@ -69,7 +80,44 @@ void modes_hosgrid::populate_hos_eta(
   //   .. they are not intended to be reused ..   //
 }
 
+void modes_hosgrid::dimensionalize_eta(
+    const double dimL, amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
+  // Get pointers to eta because it is on device
+  auto *eta_ptr = HOS_eta.data();
+  // Get size of eta for loop
+  const int n2D = HOS_eta.size();
+  // Multiply each component of velocity vectors in given range of indices to
+  // dimensionalize the velocity
+  amrex::ParallelFor(n2D, [=] AMREX_GPU_DEVICE(int n) { eta_ptr[n] *= dimL; });
+}
+
 void modes_hosgrid::populate_hos_vel(
+    int n0, int n1, double xlen, double ylen, double depth, double z,
+    const double dimL, const double dimT,
+    std::vector<std::complex<double>> mX_vector,
+    std::vector<std::complex<double>> mY_vector,
+    std::vector<std::complex<double>> mZ_vector, fftw_plan p,
+    fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
+
+  // Nondimensionalize lengths from AMR domain
+  const amrex::Real nd_xlen = xlen / dimL;
+  const amrex::Real nd_ylen = ylen / dimL;
+  const amrex::Real nd_depth = depth / dimL;
+  const amrex::Real nd_z = z / dimL;
+
+  // Get nondimensional velocities
+  populate_hos_vel_nondim(n0, n1, nd_xlen, nd_ylen, nd_depth, nd_z, mX_vector,
+                          mY_vector, mZ_vector, p, x_modes, y_modes, z_modes,
+                          HOS_u, HOS_v, HOS_w, indv_start);
+
+  // Dimensionalize velocities
+  dimensionalize_vel(n0, n1, dimL, dimT, HOS_u, HOS_v, HOS_w, indv_start);
+}
+
+void modes_hosgrid::populate_hos_vel_nondim(
     int n0, int n1, double xlen, double ylen, double depth, double z,
     std::vector<std::complex<double>> mX_vector,
     std::vector<std::complex<double>> mY_vector,
@@ -78,7 +126,10 @@ void modes_hosgrid::populate_hos_vel(
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
-  // Reused constants (lengths are nondim)
+  // Everything within this routine is nondimensionalized, including xlen, ylen,
+  // depth, and z as inputs and HOS_u, HOS_v, and HOS_w as outputs
+
+  // Reused constants
   const double twoPi_xlen = 2.0 * M_PI / xlen;
   const double twoPi_ylen = 2.0 * M_PI / ylen;
   // Loop modes to modify them
@@ -172,4 +223,22 @@ void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in,
   }
   // Perform fft
   fftw_execute_dft_c2r(p, f_in, sp_out);
+}
+
+void modes_hosgrid::dimensionalize_vel(
+    int n0, int n1, const double dimL, const double dimT,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
+  // Get pointers to velocity because it is on device
+  auto *u_ptr = HOS_u.data();
+  auto *v_ptr = HOS_v.data();
+  auto *w_ptr = HOS_w.data();
+  // Multiply each component of velocity vectors in given range of indices to
+  // dimensionalize the velocity
+  amrex::ParallelFor(n0 * n1, [=] AMREX_GPU_DEVICE(int n) {
+    u_ptr[indv_start + n] *= dimL / dimT;
+    v_ptr[indv_start + n] *= dimL / dimT;
+    w_ptr[indv_start + n] *= dimL / dimT;
+  });
 }
