@@ -118,7 +118,7 @@ void modes_hosgrid::populate_hos_vel(
 }
 
 void modes_hosgrid::populate_hos_vel_nondim(
-    int n0, int n1, double xlen, double ylen, double depth, double z,
+    int n0, int n1, double nd_xlen, double nd_ylen, double nd_depth, double nd_z,
     std::vector<std::complex<double>> mX_vector,
     std::vector<std::complex<double>> mY_vector,
     std::vector<std::complex<double>> mZ_vector, fftw_plan p,
@@ -130,8 +130,8 @@ void modes_hosgrid::populate_hos_vel_nondim(
   // depth, and z as inputs and HOS_u, HOS_v, and HOS_w as outputs
 
   // Reused constants
-  const double twoPi_xlen = 2.0 * M_PI / xlen;
-  const double twoPi_ylen = 2.0 * M_PI / ylen;
+  const double twoPi_xlen = 2.0 * M_PI / nd_xlen;
+  const double twoPi_ylen = 2.0 * M_PI / nd_ylen;
   // Loop modes to modify them
   for (int ix = 0; ix < n0; ++ix) {
     for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
@@ -141,8 +141,8 @@ void modes_hosgrid::populate_hos_vel_nondim(
       const double ky = (double)iy * twoPi_ylen;
       const double k = sqrt(kxN2 * kxN2 + ky * ky);
       // Get depth-related quantities
-      const double kZ = k * (z + depth);
-      const double kD = k * depth;
+      const double kZ = k * (nd_z + nd_depth);
+      const double kD = k * nd_depth;
       // Get coefficients
       double coeff = 1.0;
       double coeff2 = 1.0;
@@ -152,11 +152,11 @@ void modes_hosgrid::populate_hos_vel_nondim(
           // Modified coeffs for iy = 0, ix > 0
           if ((kZ < 50.0) && (kD <= 50.0)) {
             coeff =
-                exp(k * z) * (1.0 + exp(-2.0 * kZ)) / (1.0 + exp(-2.0 * kD));
+                exp(k * nd_z) * (1.0 + exp(-2.0 * kZ)) / (1.0 + exp(-2.0 * kD));
             coeff2 =
-                exp(k * z) * (1.0 - exp(-2.0 * kZ)) / (1.0 - exp(-2.0 * kD));
+                exp(k * nd_z) * (1.0 - exp(-2.0 * kZ)) / (1.0 - exp(-2.0 * kD));
           } else {
-            coeff = exp(k * z);
+            coeff = exp(k * nd_z);
             coeff2 = coeff;
           }
           if (coeff >= 3.0) {
@@ -172,7 +172,7 @@ void modes_hosgrid::populate_hos_vel_nondim(
           coeff = cosh(kZ) / cosh(kD);
           coeff2 = sinh(kZ) / sinh(kD);
         } else {
-          coeff = exp(k * z);
+          coeff = exp(k * nd_z);
           coeff2 = coeff;
         }
         if (coeff >= 1000.0) {

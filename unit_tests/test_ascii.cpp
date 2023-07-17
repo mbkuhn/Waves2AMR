@@ -9,7 +9,7 @@ namespace {
 std::array<double, 8> ModeSum(double time, double initval) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
   // Read and convert nondim quantities
-  ReadModes rmodes(fname, false, true);
+  ReadModes rmodes(fname, true);
   // Initialize and size output variables
   int vsize = rmodes.get_vector_size();
   std::vector<std::complex<double>> mX(vsize, initval);
@@ -46,8 +46,8 @@ std::array<double, 8> ModeSum(double time, double initval) {
 
 std::array<double, 6> ModeSumBrief(double time, double initval) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
-  // Read and convert nondim quantities
-  ReadModes rmodes(fname, false, false);
+  // Read modes
+  ReadModes rmodes(fname, false);
   // Initialize and size output variables
   int vsize = rmodes.get_vector_size();
   std::vector<std::complex<double>> mX(vsize, initval);
@@ -80,28 +80,28 @@ std::array<double, 6> ModeSumBrief(double time, double initval) {
 
 class AsciiReadTest : public testing::Test {};
 
-TEST_F(AsciiReadTest, Init) {
+TEST_F(AsciiReadTest, InitNonDim) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
 
-  // Read and keep nondim quantities
-  ReadModes rmodes(fname, true);
+  // Read
+  ReadModes rmodes(fname);
 
   EXPECT_EQ(rmodes.get_n1(), 64);
   EXPECT_EQ(rmodes.get_n2(), 64);
-  EXPECT_EQ(rmodes.get_f(), 1.0 / 6.2831853072E+01);
-  EXPECT_EQ(rmodes.get_Tstop(), 6.2831853072E+01);
-  EXPECT_EQ(rmodes.get_xlen(), 1.2566370614E+02);
-  EXPECT_EQ(rmodes.get_ylen(), 1.2566370614E+02);
-  EXPECT_EQ(rmodes.get_depth(), 1.5432809039);
-  EXPECT_EQ(rmodes.get_g(), 1.0956862426);
-  EXPECT_EQ(rmodes.get_L(), 2.2678956184E+01);
-  EXPECT_EQ(rmodes.get_T(), 1.5915494309);
+  EXPECT_NEAR(rmodes.get_nondim_f(), 1.0 / 6.2831853072E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_Tstop(), 6.2831853072E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_xlen(), 1.2566370614E+02, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_ylen(), 1.2566370614E+02, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_depth(), 1.5432809039, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_g(), 1.0956862426, 1e-8);
+  EXPECT_NEAR(rmodes.get_L(), 2.2678956184E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_T(), 1.5915494309, 1e-8);
 }
 
 TEST_F(AsciiReadTest, InitDim) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
-  // Read and convert nondim quantities
-  ReadModes rmodes(fname, false);
+  // Read
+  ReadModes rmodes(fname);
 
   constexpr double tol = 1e-11;
   EXPECT_NEAR(rmodes.get_f(), 0.01, tol);

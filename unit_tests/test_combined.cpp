@@ -8,8 +8,8 @@ class CombinedTest : public testing::Test {};
 
 TEST_F(CombinedTest, ReadFFTNonDim) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
-  // Read and store nondim quantities
-  ReadModes rmodes(fname, true, true);
+  // Read
+  ReadModes rmodes(fname);
   // Initialize and size output variables
   int vsize = rmodes.get_vector_size();
   std::vector<std::complex<double>> mX(vsize, 0.0);
@@ -22,9 +22,9 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
   // Get dimensions
   int n0 = rmodes.get_first_dimension();
   int n1 = rmodes.get_second_dimension();
-  double xlen = rmodes.get_xlen();
-  double ylen = rmodes.get_ylen();
-  double depth = rmodes.get_depth();
+  double nd_xlen = rmodes.get_nondim_xlen();
+  double nd_ylen = rmodes.get_nondim_ylen();
+  double nd_depth = rmodes.get_nondim_depth();
 
   // Allocate complex pointers and get plan
   fftw_plan plan;
@@ -74,9 +74,9 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
   // Get spatial data for velocity at different heights
   for (int n = 0; n < 2; ++n) {
 
-    modes_hosgrid::populate_hos_vel_nondim(n0, n1, xlen, ylen, depth, ht[n], mX,
-                                           mY, mZ, plan, u_modes, v_modes,
-                                           w_modes, u, v, w);
+    modes_hosgrid::populate_hos_vel_nondim(n0, n1, nd_xlen, nd_ylen, nd_depth,
+                                           ht[n], mX, mY, mZ, plan, u_modes,
+                                           v_modes, w_modes, u, v, w);
 
     // Transfer to host
     std::vector<amrex::Real> ulocal, vlocal, wlocal;
@@ -124,8 +124,8 @@ TEST_F(CombinedTest, ReadFFTNonDim) {
 
 TEST_F(CombinedTest, ReadFFTDim) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
-  // Read and convert nondim quantities
-  ReadModes rmodes(fname, false, true);
+  // Read
+  ReadModes rmodes(fname);
   // Initialize and size output variables
   int vsize = rmodes.get_vector_size();
   std::vector<std::complex<double>> mX(vsize, 0.0);

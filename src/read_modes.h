@@ -8,7 +8,7 @@
 #include <vector>
 class ReadModes {
 public:
-  ReadModes(std::string, bool nondim, bool allmodes = false);
+  ReadModes(std::string, bool allmodes = false);
 
   ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
             double depth_, double g_, double L_, double T_);
@@ -54,7 +54,7 @@ public:
   int get_first_dimension() { return (from_fortran ? n2 : n1); }
   int get_second_dimension() { return (from_fortran ? n1 : n2); }
 
-  // Output functions for testing
+  // Output functions of parameters
   int get_n1() { return n1; }
   int get_n2() { return n2; }
   double get_dtout() { return dt_out; }
@@ -64,6 +64,13 @@ public:
   double get_ylen() { return ylen; }
   double get_depth() { return depth; }
   double get_g() { return g; }
+  double get_nondim_dtout() { return dt_out / T; }
+  double get_nondim_f() { return f_out * T; }
+  double get_nondim_Tstop() { return T_stop / T; }
+  double get_nondim_xlen() { return xlen / L; }
+  double get_nondim_ylen() { return ylen / L; }
+  double get_nondim_depth() { return depth / L; }
+  double get_nondim_g() { return g / L * T * T; }
   double get_L() { return L; }
   double get_T() { return T; }
 

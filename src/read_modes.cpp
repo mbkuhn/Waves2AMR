@@ -1,6 +1,6 @@
 #include "read_modes.h"
 
-ReadModes::ReadModes(std::string filename, bool nondim, bool allmodes)
+ReadModes::ReadModes(std::string filename, bool allmodes)
     : m_filename(filename) {
   // Set time index value
   itime_now = 0;
@@ -26,10 +26,8 @@ ReadModes::ReadModes(std::string filename, bool nondim, bool allmodes)
     modeFST.resize(vec_size);
   }
 
-  // Do not dimensionalize nondim quantities by default
-  if (!nondim) {
-    dimensionalize();
-  }
+  // Dimensionalize all nondim scalar quantities
+  dimensionalize();
 }
 
 ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,

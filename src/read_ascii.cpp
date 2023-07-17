@@ -11,7 +11,7 @@ void ReadModes::ascii_initialize() {
       T;
 
   // xlen, ylen, depth, and g are nondimensionalized
-  // g, L, and T are dimensional
+  // L and T are dimensional
 
   // Convert values
   n1 = (int)d_n1;
