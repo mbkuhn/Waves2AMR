@@ -64,6 +64,16 @@ void modes_hosgrid::populate_hos_eta(
   dimensionalize_eta(dimL, HOS_eta);
 }
 
+// Uses ReadModes object directly instead of of separate variables
+void modes_hosgrid::populate_hos_eta(
+    ReadModes rm_obj, fftw_plan p, fftw_complex *eta_modes,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
+
+  // Pass parameters to function via object calls
+  populate_hos_eta(rm_obj.get_first_dimension(), rm_obj.get_second_dimension(),
+                   rm_obj.get_L(), p, eta_modes, HOS_eta);
+}
+
 void modes_hosgrid::populate_hos_eta_nondim(
     int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
@@ -117,9 +127,32 @@ void modes_hosgrid::populate_hos_vel(
   dimensionalize_vel(n0, n1, dimL, dimT, HOS_u, HOS_v, HOS_w, indv_start);
 }
 
+// Uses ReadModes object directly instead of of separate variables
+void modes_hosgrid::populate_hos_vel(
+    ReadModes rm_obj, double z, std::vector<std::complex<double>> mX_vector,
+    std::vector<std::complex<double>> mY_vector,
+    std::vector<std::complex<double>> mZ_vector, fftw_plan p,
+    fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
+    amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
+
+  // Get nondimensional velocities
+  populate_hos_vel_nondim(
+      rm_obj.get_first_dimension(), rm_obj.get_second_dimension(),
+      rm_obj.get_nondim_xlen(), rm_obj.get_nondim_ylen(),
+      rm_obj.get_nondim_depth(), z / rm_obj.get_L(), mX_vector, mY_vector,
+      mZ_vector, p, x_modes, y_modes, z_modes, HOS_u, HOS_v, HOS_w, indv_start);
+
+  // Dimensionalize velocities
+  dimensionalize_vel(rm_obj.get_first_dimension(),
+                     rm_obj.get_second_dimension(), rm_obj.get_L(),
+                     rm_obj.get_T(), HOS_u, HOS_v, HOS_w, indv_start);
+}
+
 void modes_hosgrid::populate_hos_vel_nondim(
-    int n0, int n1, double nd_xlen, double nd_ylen, double nd_depth, double nd_z,
-    std::vector<std::complex<double>> mX_vector,
+    int n0, int n1, double nd_xlen, double nd_ylen, double nd_depth,
+    double nd_z, std::vector<std::complex<double>> mX_vector,
     std::vector<std::complex<double>> mY_vector,
     std::vector<std::complex<double>> mZ_vector, fftw_plan p,
     fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
