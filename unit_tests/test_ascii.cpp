@@ -84,7 +84,7 @@ TEST_F(AsciiReadTest, Init) {
   std::string fname = "../tests/modes_HOS_SWENSE.dat";
 
   // Read and keep nondim quantities
-  ReadModes rmodes(fname);
+  ReadModes rmodes(fname, true);
 
   EXPECT_EQ(rmodes.get_n1(), 64);
   EXPECT_EQ(rmodes.get_n2(), 64);

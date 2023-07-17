@@ -8,7 +8,7 @@
 #include <vector>
 class ReadModes {
 public:
-  ReadModes(std::string, bool nondim = true, bool allmodes = false);
+  ReadModes(std::string, bool nondim, bool allmodes = false);
 
   ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
             double depth_, double g_, double L_, double T_);
