@@ -45,9 +45,10 @@ ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
   dimensionalize();
 }
 
-int ReadModes::time2step(double time) {
+int ReadModes::time2step(const double time) {
   // Return -1 if time is negative
-  if (time < 0.0) return -1;
+  if (time < 0.0)
+    return -1;
   // Look for same time or after
   bool done = false;
   while (!done) {

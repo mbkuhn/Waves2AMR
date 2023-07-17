@@ -3,25 +3,26 @@
 #include <iostream>
 
 void modes_hosgrid::copy_complex(
-    int n0, int n1, std::vector<std::complex<double>> complex_vector,
-    fftw_complex *ptr) {
+    const int n0, const int n1,
+    std::vector<std::complex<double>> complex_vector, fftw_complex *ptr) {
   for (int i = 0; i < n0; ++i) {
     for (int j = 0; j < n1 / 2 + 1; ++j) {
-      int idx = i * (n1 / 2 + 1) + j;
+      const int idx = i * (n1 / 2 + 1) + j;
       ptr[idx][0] = complex_vector[idx].real();
       ptr[idx][1] = complex_vector[idx].imag();
     }
   }
 }
 
-fftw_complex *modes_hosgrid::allocate_complex(int n0, int n1) {
+fftw_complex *modes_hosgrid::allocate_complex(const int n0, const int n1) {
   // Allocate data needed for modes and create pointer
   fftw_complex *a_ptr = new fftw_complex[n0 * (n1 / 2 + 1)];
   // Return pointer to fftw_complex data
   return a_ptr;
 }
 
-fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex *in) {
+fftw_plan modes_hosgrid::plan_ifftw(const int n0, const int n1,
+                                    fftw_complex *in) {
   unsigned int flag = FFTW_PATIENT;
   // Output array is used for planning (except for FFTW_ESTIMATE)
   double out[n0][n1];
@@ -30,7 +31,7 @@ fftw_plan modes_hosgrid::plan_ifftw(int n0, int n1, fftw_complex *in) {
 }
 
 fftw_complex *modes_hosgrid::allocate_plan_copy(
-    int n0, int n1, fftw_plan &p,
+    const int n0, const int n1, fftw_plan &p,
     std::vector<std::complex<double>> complex_vector) {
   // Allocate and get pointer
   auto a_ptr = allocate_complex(n0, n1);
@@ -43,7 +44,7 @@ fftw_complex *modes_hosgrid::allocate_plan_copy(
 }
 
 fftw_complex *
-modes_hosgrid::allocate_copy(int n0, int n1,
+modes_hosgrid::allocate_copy(const int n0, const int n1,
                              std::vector<std::complex<double>> complex_vector) {
   // Allocate and get pointer
   auto a_ptr = allocate_complex(n0, n1);
@@ -54,8 +55,8 @@ modes_hosgrid::allocate_copy(int n0, int n1,
 }
 
 void modes_hosgrid::populate_hos_eta(
-    int n0, int n1, const double dimL, fftw_plan p, fftw_complex *eta_modes,
-    amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
+    const int n0, const int n1, const double dimL, fftw_plan p,
+    fftw_complex *eta_modes, amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
 
   // Get nondimensional interface height (eta)
   populate_hos_eta_nondim(n0, n1, p, eta_modes, HOS_eta);
@@ -75,7 +76,7 @@ void modes_hosgrid::populate_hos_eta(
 }
 
 void modes_hosgrid::populate_hos_eta_nondim(
-    int n0, int n1, fftw_plan p, fftw_complex *eta_modes,
+    const int n0, const int n1, fftw_plan p, fftw_complex *eta_modes,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta) {
   // Local array for output data
   double out[n0 * n1];
@@ -129,7 +130,8 @@ void modes_hosgrid::populate_hos_vel(
 
 // Uses ReadModes object directly instead of of separate variables
 void modes_hosgrid::populate_hos_vel(
-    ReadModes rm_obj, double z, std::vector<std::complex<double>> mX_vector,
+    ReadModes rm_obj, const double z,
+    std::vector<std::complex<double>> mX_vector,
     std::vector<std::complex<double>> mY_vector,
     std::vector<std::complex<double>> mZ_vector, fftw_plan p,
     fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
@@ -151,8 +153,9 @@ void modes_hosgrid::populate_hos_vel(
 }
 
 void modes_hosgrid::populate_hos_vel_nondim(
-    int n0, int n1, double nd_xlen, double nd_ylen, double nd_depth,
-    double nd_z, std::vector<std::complex<double>> mX_vector,
+    const int n0, const int n1, const double nd_xlen, const double nd_ylen,
+    const double nd_depth, const double nd_z,
+    std::vector<std::complex<double>> mX_vector,
     std::vector<std::complex<double>> mY_vector,
     std::vector<std::complex<double>> mZ_vector, fftw_plan p,
     fftw_complex *x_modes, fftw_complex *y_modes, fftw_complex *z_modes,
@@ -217,7 +220,7 @@ void modes_hosgrid::populate_hos_vel_nondim(
       }
       // Multiply modes by coefficients
       // hosProcedure is velocity, I think
-      int idx = ix * (n1 / 2 + 1) + iy;
+      const int idx = ix * (n1 / 2 + 1) + iy;
       (x_modes[idx])[0] = coeff * mX_vector[idx].real();
       (x_modes[idx])[1] = coeff * mX_vector[idx].imag();
       (y_modes[idx])[0] = coeff * mY_vector[idx].real();
@@ -227,7 +230,7 @@ void modes_hosgrid::populate_hos_vel_nondim(
     }
   }
   // Output pointer
-  int xy_size = n0 * n1;
+  const int xy_size = n0 * n1;
   auto out = new double[xy_size];
   // Perform inverse fft
   do_ifftw(n0, n1, p, x_modes, &out[0]);
@@ -243,23 +246,8 @@ void modes_hosgrid::populate_hos_vel_nondim(
                    &HOS_w[indv_start]);
 }
 
-void modes_hosgrid::do_ifftw(int n0, int n1, fftw_plan p, fftw_complex *f_in,
-                             double *sp_out) {
-  // Modify modes with conversion coefficients
-  for (int ix = 0; ix < n0; ++ix) {
-    for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
-      int idx = ix * (n1 / 2 + 1) + iy;
-      double f2s = (iy == 0 ? 1.0 : 0.5);
-      (f_in[idx])[0] *= f2s;
-      (f_in[idx])[1] *= f2s;
-    }
-  }
-  // Perform fft
-  fftw_execute_dft_c2r(p, f_in, sp_out);
-}
-
 void modes_hosgrid::dimensionalize_vel(
-    int n0, int n1, const double dimL, const double dimT,
+    const int n0, const int n1, const double dimL, const double dimT,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_v,
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
@@ -274,4 +262,19 @@ void modes_hosgrid::dimensionalize_vel(
     v_ptr[indv_start + n] *= dimL / dimT;
     w_ptr[indv_start + n] *= dimL / dimT;
   });
+}
+
+void modes_hosgrid::do_ifftw(const int n0, const int n1, fftw_plan p,
+                             fftw_complex *f_in, double *sp_out) {
+  // Modify modes with conversion coefficients
+  for (int ix = 0; ix < n0; ++ix) {
+    for (int iy = 0; iy < n1 / 2 + 1; ++iy) {
+      const int idx = ix * (n1 / 2 + 1) + iy;
+      const double f2s = (iy == 0 ? 1.0 : 0.5);
+      (f_in[idx])[0] *= f2s;
+      (f_in[idx])[1] *= f2s;
+    }
+  }
+  // Perform fft
+  fftw_execute_dft_c2r(p, f_in, sp_out);
 }

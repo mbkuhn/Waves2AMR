@@ -19,17 +19,16 @@ void ReadModes::ascii_initialize() {
   f_out = 1.0 / dt_out;
 }
 
-void ReadModes::ascii_read(int itime) {
+void ReadModes::ascii_read(const int itime) {
 
   if (modeT.size() == 0) {
     ascii_read_brief(itime);
   } else {
     ascii_read_full(itime);
   }
-
 }
 
-void ReadModes::ascii_read_full(int itime) {
+void ReadModes::ascii_read_full(const int itime) {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
@@ -85,7 +84,7 @@ void ReadModes::ascii_read_full(int itime) {
   }
 }
 
-void ReadModes::ascii_read_brief(int itime) {
+void ReadModes::ascii_read_brief(const int itime) {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());

@@ -45,7 +45,7 @@ public:
   int get_vector_size() { return vec_size; }
 
   // Convert time to timestep
-  int time2step(double time);
+  int time2step(const double time);
 
   // Convert dimensions for fortran reading
   /* bool fortran2cpp() {} */
@@ -77,9 +77,9 @@ public:
 private:
   // ASCII functions
   void ascii_initialize();
-  void ascii_read(int itime);
-  void ascii_read_full(int itime);
-  void ascii_read_brief(int itime);
+  void ascii_read(const int itime);
+  void ascii_read_full(const int itime);
+  void ascii_read_brief(const int itime);
 
   // Dimensionalize read-in quantities
   void dimensionalize();

@@ -4,7 +4,7 @@
 
 namespace interp_to_mfab {
 
-int create_height_vector(amrex::Vector<amrex::Real> &hvec, int n,
+int create_height_vector(amrex::Vector<amrex::Real> &hvec, const int n,
                          const amrex::Real dz0, const amrex::Real z_wlev,
                          const amrex::Real z_btm, int n_above = 1);
 
