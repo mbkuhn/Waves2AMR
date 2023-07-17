@@ -61,8 +61,10 @@ int main(int argc, char *argv[]) {
   const int ncomp = 3;
   const int nghost = 3;
   // Just do one level in this test
-  amrex::MultiFab mf(ba, dm, ncomp, nghost);
-  amrex::Vector<amrex::MultiFab *> velocity_field{&mf};
+  amrex::MultiFab mf_ls(ba, dm, 1, nghost);
+  amrex::MultiFab mf_v(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> phi_field{&mf_ls};
+  amrex::Vector<amrex::MultiFab *> velocity_field{&mf_v};
 
   // Make vectors of GpuArrays for geometry information
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.1, 0.1, 0.1};
@@ -82,8 +84,8 @@ int main(int argc, char *argv[]) {
   }
 
   // Perform fftw for eta
-  amrex::Gpu::DeviceVector<amrex::Real> eta(n0 * n1, 0.0);
-  modes_hosgrid::populate_hos_eta(n0, n1, dimL, plan, eta_modes, eta);
+  amrex::Gpu::DeviceVector<amrex::Real> hos_eta_vec(n0 * n1, 0.0);
+  modes_hosgrid::populate_hos_eta(n0, n1, dimL, plan, eta_modes, hos_eta_vec);
 
   // Create vector of velocities to sample
   amrex::Gpu::DeviceVector<amrex::Real> hos_u_vec;
@@ -130,6 +132,10 @@ int main(int argc, char *argv[]) {
   // Interpolate to multifab
   const amrex::Real spd_dx = xlen / n0;
   const amrex::Real spd_dy = ylen / n1;
+  const amrex::Real zero_sea_level = 0.0;
+  interp_to_mfab::interp_eta_to_levelset_multifab(n0, n1, spd_dx, spd_dy,
+                                                  zero_sea_level, hos_eta_vec,
+                                                  phi_field, problo, dx);
   interp_to_mfab::interp_velocity_to_multifab(
       n0, n1, spd_dx, spd_dy, indvec, hvec, hos_u_vec, hos_v_vec, hos_w_vec,
       velocity_field, problo, dx);

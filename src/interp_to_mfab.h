@@ -14,6 +14,14 @@ int get_local_height_indices(
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 
+void interp_eta_to_levelset_multifab(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, const amrex::Real zsl,
+    amrex::Gpu::DeviceVector<amrex::Real> etavec,
+    amrex::Vector<amrex::MultiFab *> lsfield,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
+
 void interp_velocity_to_multifab(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
     const amrex::Real spd_dy, amrex::Vector<int> indvec,
@@ -32,6 +40,13 @@ linear_interp(const amrex::Real a000, const amrex::Real a100,
               const amrex::Real xc, const amrex::Real yc, const amrex::Real zc,
               const amrex::Real x0, const amrex::Real y0, const amrex::Real z0,
               const amrex::Real x1, const amrex::Real y1, const amrex::Real z1);
+
+AMREX_GPU_HOST_DEVICE amrex::Real
+linear_interp2D(const amrex::Real a00, const amrex::Real a10,
+                const amrex::Real a01, const amrex::Real a11,
+                const amrex::Real xc, const amrex::Real yc,
+                const amrex::Real x0, const amrex::Real y0,
+                const amrex::Real x1, const amrex::Real y1);
 
 } // namespace interp_to_mfab
 

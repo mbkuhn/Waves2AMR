@@ -134,6 +134,92 @@ int interp_to_mfab::get_local_height_indices(
   return 0;
 }
 
+// Loop through and populate the multifab with levelset data, calculated by
+// interpolating eta at each point
+void interp_to_mfab::interp_eta_to_levelset_multifab(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, const amrex::Real zsl,
+    amrex::Gpu::DeviceVector<amrex::Real> etavec,
+    amrex::Vector<amrex::MultiFab *> lsfield,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
+
+  // Number of levels
+  int nlevels = lsfield.size();
+  // Get pointer to device vector
+  auto *etavec_ptr = etavec.data();
+
+  // Loop through cells and perform interpolation
+  for (int nl = 0; nl < nlevels; ++nl) {
+    auto &lslev = *(lsfield[nl]);
+    const auto problo = problo_vec[nl];
+    const auto dx = dx_vec[nl];
+    for (amrex::MFIter mfi(lslev); mfi.isValid(); ++mfi) {
+      auto bx = mfi.growntilebox();
+      amrex::Array4<amrex::Real> lsarr = lslev.array(mfi);
+      amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+        // Location of cell
+        amrex::Real xc = problo[0] + (i + 0.5) * dx[0];
+        amrex::Real yc = problo[1] + (j + 0.5) * dx[1];
+        const amrex::Real zc = problo[2] + (k + 0.5) * dx[2];
+        // HOS data assumed to be periodic in x and y
+        const amrex::Real spd_Lx = spd_nx * spd_dx;
+        const amrex::Real spd_Ly = spd_ny * spd_dy;
+        xc = ((xc > spd_Lx) ? xc - spd_Lx : xc);
+        xc = ((xc < 0.) ? xc + spd_Lx : xc);
+        yc = ((yc > spd_Ly) ? yc - spd_Ly : yc);
+        yc = ((yc < 0.) ? yc + spd_Ly : yc);
+        // Initial positions and indices of HOS spatial data vectors
+        int i0 = xc / spd_dx;
+        int j0 = yc / spd_dy;
+        int i1 = i0 + 1, j1 = j0 + 1;
+        amrex::Real x0 = spd_dx * i0, x1 = spd_dx * i1;
+        amrex::Real y0 = spd_dy * j0, y1 = spd_dy * j1;
+        // Should there be an offset?
+        // Get surrounding indices (go forward, go backward)
+        while (i0 < spd_nx - 2 && x0 - spd_dx < xc) {
+          ++i0;
+          x0 = spd_dx * i0;
+        }
+        while (i0 > 0 && x0 > xc) {
+          --i0;
+          x0 = spd_dx * i0;
+        }
+        while (j0 < spd_ny - 2 && y0 - spd_dy < yc) {
+          ++j0;
+          y0 = spd_dy * j0;
+        }
+        while (j0 > 0 && y0 > yc) {
+          --j0;
+          y0 = spd_dy * j0;
+        }
+        // Get points above
+        i1 = i0 + 1;
+        x1 = spd_dx * i1;
+        j1 = j0 + 1;
+        y1 = spd_dy * j1;
+        // Periodicity for indices
+        i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
+        j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
+        // Form indices for 1D vector of 3D data
+        const int idx00 = i0 * spd_ny + j0;
+        const int idx10 = i1 * spd_ny + j0;
+        const int idx01 = i0 * spd_ny + j1;
+        const int idx11 = i1 * spd_ny + j1;
+        // Get surrounding data
+        const amrex::Real e00 = etavec_ptr[idx00];
+        const amrex::Real e10 = etavec_ptr[idx10];
+        const amrex::Real e01 = etavec_ptr[idx01];
+        const amrex::Real e11 = etavec_ptr[idx11];
+        // Interpolate eta and calculate levelset
+        lsarr(i, j, k) =
+            linear_interp2D(e00, e10, e01, e11, xc, yc, x0, y0, x1, y1) + zsl -
+            zc;
+      });
+    }
+  }
+}
+
 // Loop through and populate the multifab with interpolated velocity
 void interp_to_mfab::interp_velocity_to_multifab(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
@@ -298,4 +384,22 @@ AMREX_GPU_HOST_DEVICE amrex::Real interp_to_mfab::linear_interp(
           wx_lo * wy_hi * wz_lo * a010 + wx_lo * wy_hi * wz_hi * a011 +
           wx_hi * wy_lo * wz_lo * a100 + wx_hi * wy_lo * wz_hi * a101 +
           wx_hi * wy_hi * wz_lo * a110 + wx_hi * wy_hi * wz_hi * a111);
+}
+
+AMREX_GPU_HOST_DEVICE amrex::Real
+interp_to_mfab::linear_interp2D(const amrex::Real a00, const amrex::Real a10,
+                                const amrex::Real a01, const amrex::Real a11,
+                                const amrex::Real xc, const amrex::Real yc,
+                                const amrex::Real x0, const amrex::Real y0,
+                                const amrex::Real x1, const amrex::Real y1) {
+
+  // Interpolation weights in each direction (linear basis)
+  const amrex::Real wx_hi = (xc - x0) / (x1 - x0);
+  const amrex::Real wy_hi = (yc - y0) / (y1 - y0);
+
+  const amrex::Real wx_lo = 1.0 - wx_hi;
+  const amrex::Real wy_lo = 1.0 - wy_hi;
+
+  return (wx_lo * wy_lo * a00 + wx_hi * wy_lo * a10 + wx_lo * wy_hi * a01 +
+          wx_hi * wy_hi * a11);
 }

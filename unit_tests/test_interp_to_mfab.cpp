@@ -143,17 +143,17 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
   amrex::Gpu::DeviceVector<amrex::Real> vvec; //{dv2, dv3, dv4};
   amrex::Gpu::DeviceVector<amrex::Real> wvec; //{dv4, dv4, dv3};
   // U velocity is dv2 at all three heights
-  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
-  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
-  uvec.insert(uvec.end(),dv2.begin(),dv2.end());
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
   // V velocity is {dv2, dv3, dv4}
-  vvec.insert(vvec.end(),dv2.begin(),dv2.end());
-  vvec.insert(vvec.end(),dv3.begin(),dv3.end());
-  vvec.insert(vvec.end(),dv4.begin(),dv4.end());
+  vvec.insert(vvec.end(), dv2.begin(), dv2.end());
+  vvec.insert(vvec.end(), dv3.begin(), dv3.end());
+  vvec.insert(vvec.end(), dv4.begin(), dv4.end());
   // W velocity is {dv4, dv4, dv3}
-  wvec.insert(wvec.end(),dv4.begin(),dv4.end());
-  wvec.insert(wvec.end(),dv4.begin(),dv4.end());
-  wvec.insert(wvec.end(),dv3.begin(),dv3.end());
+  wvec.insert(wvec.end(), dv4.begin(), dv4.end());
+  wvec.insert(wvec.end(), dv4.begin(), dv4.end());
+  wvec.insert(wvec.end(), dv3.begin(), dv3.end());
 
   // Set up target mfabs and mesh
   const int nz = 8;
@@ -244,6 +244,30 @@ TEST_F(InterpToMFabTest, linear_interp) {
   a = interp_to_mfab::linear_interp(0., 0., 0., 0., 0., 0., 0., 1., 1., 1.,
                                     -0.5, x0, y0, z0, x1, y1, z1);
   EXPECT_NEAR(a, -0.5, 1e-15);
+}
+
+TEST_F(InterpToMFabTest, linear_interp2D) {
+  // Test points directly
+  amrex::Real x1 = 1.0, y1 = 1.0;
+  amrex::Real x0 = 0.0, y0 = 0.0;
+  amrex::Real a =
+      interp_to_mfab::linear_interp2D(1., 0., 0., 0., 0., 0., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp2D(0., 1., 0., 0., 1., 0., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp2D(0., 0., 1., 0., 0., 1., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  a = interp_to_mfab::linear_interp2D(0., 0., 0., 1., 1., 1., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.0, 1e-15);
+  // Test line in each direction, interp and extrap
+  a = interp_to_mfab::linear_interp2D(1., 0., 0., 0., 0.5, 0., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 0.5, 1e-15);
+  a = interp_to_mfab::linear_interp2D(1., 0., 0., 0., -0.5, 0., x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.5, 1e-15);
+  a = interp_to_mfab::linear_interp2D(0., 0., 1., 0., 0., 0.5, x0, y0, x1, y1);
+  EXPECT_NEAR(a, 0.5, 1e-15);
+  a = interp_to_mfab::linear_interp2D(0., 0., 1., 0., 0., 1.5, x0, y0, x1, y1);
+  EXPECT_NEAR(a, 1.5, 1e-15);
 }
 
 } // namespace w2a_tests
