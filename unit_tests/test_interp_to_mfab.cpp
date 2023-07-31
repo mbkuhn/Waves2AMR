@@ -175,9 +175,9 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
                                                       problo, dx);
   EXPECT_EQ(flag, 0);
   // Perform interpolation
-  interp_to_mfab::interp_velocity_to_multifab(spd_nx, spd_ny, spd_dx, spd_dy,
-                                              indvec, hvec, uvec, vvec, wvec,
-                                              field_fabs, problo, dx);
+  interp_to_mfab::interp_velocity_to_field(spd_nx, spd_ny, spd_dx, spd_dy,
+                                           indvec, hvec, uvec, vvec, wvec,
+                                           field_fabs, problo, dx);
   // Check sum
   const amrex::Real mf_sum_u = sum_multifab(*field_fabs[0], 0);
   const amrex::Real mf_sum_v = sum_multifab(*field_fabs[0], 1);

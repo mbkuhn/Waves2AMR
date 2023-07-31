@@ -46,8 +46,8 @@ int main(int argc, char *argv[]) {
   auto nheights = 40;
   const amrex::Real dz0 = 0.05;
   amrex::Vector<amrex::Real> hvec;
-  int flag = interp_to_mfab::create_height_vector(hvec, nheights, dz0, 0.0,
-                                                  -depth * rmodes.get_L());
+  int flag =
+      interp_to_mfab::create_height_vector(hvec, nheights, dz0, 0.0, -depth);
   // Fail if flag indicates it should
   if (flag > 0) {
     amrex::Abort("create_height_vector error, failure code " +
@@ -87,11 +87,6 @@ int main(int argc, char *argv[]) {
   amrex::Gpu::DeviceVector<amrex::Real> hos_eta_vec(n0 * n1, 0.0);
   modes_hosgrid::populate_hos_eta(n0, n1, dimL, plan, eta_modes, hos_eta_vec);
 
-  // Create vector of velocities to sample
-  amrex::Gpu::DeviceVector<amrex::Real> hos_u_vec;
-  amrex::Gpu::DeviceVector<amrex::Real> hos_v_vec;
-  amrex::Gpu::DeviceVector<amrex::Real> hos_w_vec;
-
   // Loop through heights to check and print
   int n_hvec = 0;
   int n_mfab = nz + nghost - 1;
@@ -113,6 +108,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // Create vector of velocities to sample
+  amrex::Gpu::DeviceVector<amrex::Real> hos_u_vec;
+  amrex::Gpu::DeviceVector<amrex::Real> hos_v_vec;
+  amrex::Gpu::DeviceVector<amrex::Real> hos_w_vec;
+
   // Resize 1D velocity vectors
   int nht = indvec.size();
   hos_u_vec.resize(n0 * n1 * nht);
@@ -133,12 +133,12 @@ int main(int argc, char *argv[]) {
   const amrex::Real spd_dx = xlen / n0;
   const amrex::Real spd_dy = ylen / n1;
   const amrex::Real zero_sea_level = 0.0;
-  interp_to_mfab::interp_eta_to_levelset_multifab(n0, n1, spd_dx, spd_dy,
-                                                  zero_sea_level, hos_eta_vec,
-                                                  phi_field, problo, dx);
-  interp_to_mfab::interp_velocity_to_multifab(
-      n0, n1, spd_dx, spd_dy, indvec, hvec, hos_u_vec, hos_v_vec, hos_w_vec,
-      velocity_field, problo, dx);
+  interp_to_mfab::interp_eta_to_levelset_field(n0, n1, spd_dx, spd_dy,
+                                               zero_sea_level, hos_eta_vec,
+                                               phi_field, problo, dx);
+  interp_to_mfab::interp_velocity_to_field(n0, n1, spd_dx, spd_dy, indvec, hvec,
+                                           hos_u_vec, hos_v_vec, hos_w_vec,
+                                           velocity_field, problo, dx);
 
   // Delete ptrs and plan
   delete[] eta_modes;

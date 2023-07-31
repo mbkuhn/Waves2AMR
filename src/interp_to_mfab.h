@@ -14,7 +14,7 @@ int get_local_height_indices(
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 
-void interp_eta_to_levelset_multifab(
+void interp_eta_to_levelset_field(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
     const amrex::Real spd_dy, const amrex::Real zsl,
     amrex::Gpu::DeviceVector<amrex::Real> etavec,
@@ -22,7 +22,7 @@ void interp_eta_to_levelset_multifab(
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 
-void interp_velocity_to_multifab(
+void interp_velocity_to_field(
     const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
     const amrex::Real spd_dy, amrex::Vector<int> indvec,
     amrex::Vector<amrex::Real> hvec, amrex::Gpu::DeviceVector<amrex::Real> uvec,
@@ -31,6 +31,22 @@ void interp_velocity_to_multifab(
     amrex::Vector<amrex::MultiFab *> vfield,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
+
+void interp_eta_to_levelset_multifab(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, const amrex::Real zsl,
+    amrex::Gpu::DeviceVector<amrex::Real> etavec, amrex::MultiFab &lsfab,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx);
+
+void interp_velocity_to_multifab(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, amrex::Vector<int> indvec,
+    amrex::Vector<amrex::Real> hvec, amrex::Gpu::DeviceVector<amrex::Real> uvec,
+    amrex::Gpu::DeviceVector<amrex::Real> vvec,
+    amrex::Gpu::DeviceVector<amrex::Real> wvec, amrex::MultiFab &vfab,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx);
 
 AMREX_GPU_HOST_DEVICE amrex::Real
 linear_interp(const amrex::Real a000, const amrex::Real a100,
