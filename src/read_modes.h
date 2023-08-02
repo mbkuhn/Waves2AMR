@@ -13,6 +13,10 @@ public:
   ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
             double depth_, double g_, double L_, double T_);
 
+  ReadModes();
+
+  void initialize(std::string, bool allmodes = false);
+
   void print_file_constants();
 
   void read_data(double time);
@@ -104,6 +108,9 @@ private:
 
   // Relate between format of modes and FFT (only one option now)
   const bool from_fortran = true;
+
+  // Is initialized? for constructor vs initializer functions
+  bool is_init{false};
 };
 
 #endif

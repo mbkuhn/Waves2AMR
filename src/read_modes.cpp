@@ -1,7 +1,7 @@
 #include "read_modes.h"
 
 ReadModes::ReadModes(std::string filename, bool allmodes)
-    : m_filename(filename) {
+    : m_filename(filename), is_init(true) {
   // Set time index value
   itime_now = 0;
   // TODO: Determine filetype
@@ -33,7 +33,7 @@ ReadModes::ReadModes(std::string filename, bool allmodes)
 ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
                      double depth_, double g_, double L_, double T_)
     : dt_out(dt_out_), T_stop(T_stop_), xlen(xlen_), ylen(ylen_), depth(depth_),
-      g(g_), L(L_), T(T_) {
+      g(g_), L(L_), T(T_), is_init(true) {
   // ^Manually set metadata for the sake of testing, do other expected steps
   // No treatment of integer dimensions needed at the moment
 
@@ -42,6 +42,47 @@ ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
   // Initialize output frequency
   f_out = 1.0 / dt_out;
 
+  dimensionalize();
+}
+
+// Do-nothing constructor, initializer must be called later
+ReadModes::ReadModes() : is_init(false) {}
+
+void ReadModes::initialize(std::string filename, bool allmodes) {
+  // Check if already initialized
+  if (is_init) {
+    std::cout << "ABORT: ReadModes has already been initialized, but "
+                 "initialize has been called again.\n";
+    std::exit(1);
+  }
+  is_init = true;
+  m_filename = filename;
+
+  // Set time index value
+  itime_now = 0;
+  // TODO: Determine filetype
+
+  // Initialize (TODO: according to file type)
+  ascii_initialize();
+
+  // Get working dimensions
+  n1o2p1 = n1 / 2 + 1;
+
+  // Calculate size of mode vectors
+  vec_size = n2 * n1o2p1;
+
+  // Set size of mode vectors
+  modeX.resize(vec_size);
+  modeY.resize(vec_size);
+  modeZ.resize(vec_size);
+  modeFS.resize(vec_size);
+  // These modes are optional
+  if (allmodes) {
+    modeT.resize(vec_size);
+    modeFST.resize(vec_size);
+  }
+
+  // Dimensionalize all nondim scalar quantities
   dimensionalize();
 }
 

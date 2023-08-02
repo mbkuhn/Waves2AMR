@@ -112,6 +112,43 @@ TEST_F(AsciiReadTest, InitDim) {
   EXPECT_NEAR(rmodes.get_g(), 9.81, tol * 1e2);
 }
 
+TEST_F(AsciiReadTest, InitEmptyConstructor) {
+  std::string fname = "../tests/modes_HOS_SWENSE.dat";
+
+  // Read
+  ReadModes rmodes;
+
+  rmodes.initialize(fname);
+
+  EXPECT_EQ(rmodes.get_n1(), 64);
+  EXPECT_EQ(rmodes.get_n2(), 64);
+  EXPECT_NEAR(rmodes.get_nondim_f(), 1.0 / 6.2831853072E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_Tstop(), 6.2831853072E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_xlen(), 1.2566370614E+02, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_ylen(), 1.2566370614E+02, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_depth(), 1.5432809039, 1e-8);
+  EXPECT_NEAR(rmodes.get_nondim_g(), 1.0956862426, 1e-8);
+  EXPECT_NEAR(rmodes.get_L(), 2.2678956184E+01, 1e-8);
+  EXPECT_NEAR(rmodes.get_T(), 1.5915494309, 1e-8);
+
+  constexpr double tol = 1e-11;
+  EXPECT_NEAR(rmodes.get_f(), 0.01, tol);
+  EXPECT_NEAR(rmodes.get_Tstop(), 100.0, tol * 1e2);
+  EXPECT_NEAR(rmodes.get_xlen(), 2.8499216855720260E+03, tol * 5e4);
+  EXPECT_NEAR(rmodes.get_ylen(), 2.8499216855720260E+03, tol * 5e4);
+  EXPECT_NEAR(rmodes.get_depth(), 35.0, tol * 1e2);
+  EXPECT_NEAR(rmodes.get_g(), 9.81, tol * 1e2);
+}
+
+TEST_F(AsciiReadTest, InitializeFail) {
+  std::string fname = "../tests/modes_HOS_SWENSE.dat";
+
+  // Read
+  ReadModes rmodes(fname);
+
+  EXPECT_DEATH(rmodes.initialize(fname);, "");
+}
+
 TEST_F(AsciiReadTest, ModesInit) {
 
   // Get mode sums written at initialization, which are placeholders

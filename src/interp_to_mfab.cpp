@@ -76,36 +76,87 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
 int interp_to_mfab::get_local_height_indices(
     amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
     amrex::Vector<amrex::MultiFab *> field_fabs,
-    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
-    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
-
-  // Size of hvec
-  const int nheights = hvec.size();
-  // Number of levels
-  const int nlevels = field_fabs.size();
-  // This library assumes height is in z (index of 2)
-  constexpr int idim = 2;
+    amrex::Vector<amrex::Geometry> geom) {
 
   // Bounds of local AMR mesh
   amrex::Real mesh_zlo = std::numeric_limits<double>::infinity();
   amrex::Real mesh_zhi = -1. * std::numeric_limits<double>::infinity();
 
+  // Number of levels
+  const int nlevels = field_fabs.size();
   // Loop through levels and mfabs and get max/min bounds
   for (int nl = 0; nl < nlevels; ++nl) {
-    for (amrex::MFIter mfi(*field_fabs[nl]); mfi.isValid(); ++mfi) {
-      const auto &bx = mfi.growntilebox();
-      const amrex::Real mfab_hi =
-          (problo_vec[nl])[idim] + bx.bigEnd(idim) * (dx_vec[nl])[idim];
-      const amrex::Real mfab_lo =
-          (problo_vec[nl])[idim] + bx.smallEnd(idim) * (dx_vec[nl])[idim];
-      mesh_zlo = std::min(mfab_lo, mesh_zlo);
-      mesh_zhi = std::max(mfab_hi, mesh_zhi);
-    }
+    auto problo = geom[nl].ProbLoArray();
+    auto dx = geom[nl].CellSizeArray();
+    local_height_mfab_ops(hvec, *field_fabs[nl], problo, dx, mesh_zlo,
+                          mesh_zhi);
   }
 
+  return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
+}
+
+// Loop through the mfabs of a field to get which z heights are local to the
+// current process
+int interp_to_mfab::get_local_height_indices(
+    amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
+    amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
+
+  // Bounds of local AMR mesh
+  amrex::Real mesh_zlo = std::numeric_limits<double>::infinity();
+  amrex::Real mesh_zhi = -1. * std::numeric_limits<double>::infinity();
+
+  // Number of levels
+  const int nlevels = field_fabs.size();
+  // Loop through levels and mfabs and get max/min bounds
+  for (int nl = 0; nl < nlevels; ++nl) {
+    local_height_mfab_ops(hvec, *field_fabs[nl], problo_vec[nl], dx_vec[nl],
+                          mesh_zlo, mesh_zhi);
+  }
+
+  return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
+}
+
+// Loop through the mfabs of a field to get which z heights are local to the
+// current process
+int interp_to_mfab::get_local_height_indices(
+    amrex::Vector<int> &indvec, amrex::Vector<amrex::Real> hvec,
+    amrex::MultiFab &mfab, amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx) {
+
+  // Bounds of local AMR mesh
+  amrex::Real mesh_zlo = std::numeric_limits<double>::infinity();
+  amrex::Real mesh_zhi = -1. * std::numeric_limits<double>::infinity();
+
+  // This function works on a single mfab
+  local_height_mfab_ops(hvec, mfab, problo, dx, mesh_zlo, mesh_zhi);
+
+  return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
+}
+
+void interp_to_mfab::local_height_mfab_ops(
+    amrex::Vector<amrex::Real> hvec, amrex::MultiFab &mfab,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx, amrex::Real &mesh_zlo,
+    amrex::Real &mesh_zhi, int idim) {
+  for (amrex::MFIter mfi(mfab); mfi.isValid(); ++mfi) {
+    const auto &bx = mfi.growntilebox();
+    const amrex::Real mfab_hi = problo[idim] + bx.bigEnd(idim) * dx[idim];
+    const amrex::Real mfab_lo = problo[idim] + bx.smallEnd(idim) * dx[idim];
+    mesh_zlo = std::min(mfab_lo, mesh_zlo);
+    mesh_zhi = std::max(mfab_hi, mesh_zhi);
+  }
+}
+
+int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
+                                         amrex::Vector<amrex::Real> hvec,
+                                         amrex::Real &mesh_zlo,
+                                         amrex::Real &mesh_zhi) {
   // Loop through height vector and get first and last indices
   int itop = -1; // top index is lowest ind, highest height
   int ibtm = -1; // btm index is highest ind, lowest height
+  int nheights = hvec.size();
   for (int nh = 0; nh < nheights; ++nh) {
     if (itop == -1 && hvec[nh] <= mesh_zhi && hvec[nh] >= mesh_zlo) {
       itop = nh;
@@ -141,6 +192,29 @@ void interp_to_mfab::interp_eta_to_levelset_field(
     const amrex::Real spd_dy, const amrex::Real zsl,
     amrex::Gpu::DeviceVector<amrex::Real> etavec,
     amrex::Vector<amrex::MultiFab *> lsfield,
+    amrex::Vector<amrex::Geometry> geom) {
+
+  // Number of levels
+  const int nlevels = lsfield.size();
+
+  // Loop through cells and perform interpolation
+  for (int nl = 0; nl < nlevels; ++nl) {
+    auto &lslev = *(lsfield[nl]);
+    const auto problo = geom[nl].ProbLoArray();
+    const auto dx = geom[nl].CellSizeArray();
+
+    interp_eta_to_levelset_multifab(spd_nx, spd_ny, spd_dx, spd_dy, zsl, etavec,
+                                    lslev, problo, dx);
+  }
+}
+
+// Loop through and populate the multifab with levelset data, calculated by
+// interpolating eta at each point
+void interp_to_mfab::interp_eta_to_levelset_field(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, const amrex::Real zsl,
+    amrex::Gpu::DeviceVector<amrex::Real> etavec,
+    amrex::Vector<amrex::MultiFab *> lsfield,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
     amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
 
@@ -155,6 +229,46 @@ void interp_to_mfab::interp_eta_to_levelset_field(
 
     interp_eta_to_levelset_multifab(spd_nx, spd_ny, spd_dx, spd_dy, zsl, etavec,
                                     lslev, problo, dx);
+  }
+}
+
+// Loop through and populate the multifab with interpolated velocity
+void interp_to_mfab::interp_velocity_to_field(
+    const int spd_nx, const int spd_ny, const amrex::Real spd_dx,
+    const amrex::Real spd_dy, amrex::Vector<int> indvec,
+    amrex::Vector<amrex::Real> hvec, amrex::Gpu::DeviceVector<amrex::Real> uvec,
+    amrex::Gpu::DeviceVector<amrex::Real> vvec,
+    amrex::Gpu::DeviceVector<amrex::Real> wvec,
+    amrex::Vector<amrex::MultiFab *> vfield,
+    amrex::Vector<amrex::Geometry> geom) {
+
+  // Number of levels
+  const int nlevels = vfield.size();
+  // Number of heights relevant to this processor
+  const int nhts = indvec.size();
+  // Copy hvec and indvec to device
+  amrex::Gpu::DeviceVector<int> indvec_dvc(indvec.size());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, indvec.begin(), indvec.end(),
+                   indvec_dvc.begin());
+  amrex::Gpu::DeviceVector<amrex::Real> hvec_dvc(hvec.size());
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, hvec.begin(), hvec.end(),
+                   hvec_dvc.begin());
+  // Get pointers to device vectors
+  const auto *indvec_ptr = indvec_dvc.data();
+  const auto *hvec_ptr = hvec_dvc.data();
+  const auto *uvec_ptr = uvec.data();
+  const auto *vvec_ptr = vvec.data();
+  const auto *wvec_ptr = wvec.data();
+
+  // Loop through cells and perform interpolation
+  for (int nl = 0; nl < nlevels; ++nl) {
+    auto &vlev = *(vfield[nl]);
+    const auto problo = geom[nl].ProbLoArray();
+    const auto dx = geom[nl].CellSizeArray();
+
+    // Interpolate velocity for each multifab
+    interp_velocity_to_multifab(spd_nx, spd_ny, spd_dx, spd_dy, indvec, hvec,
+                                uvec, vvec, wvec, vlev, problo, dx);
   }
 }
 
@@ -405,6 +519,14 @@ void interp_to_mfab::interp_velocity_to_multifab(
       varr(i, j, k, 2) =
           linear_interp(w000, w100, w010, w001, w110, w101, w011, w111, xc, yc,
                         zc, x0, y0, z0, x1, y1, z1);
+
+      // If lower edge of cell is above highest points from hos spatial data,
+      // populate velocity with zeros
+      if (zc - 0.5 * dx[2] > z1) {
+        varr(i, j, k, 0) = 0.0;
+        varr(i, j, k, 1) = 0.0;
+        varr(i, j, k, 2) = 0.0;
+      }
     });
   }
 }
