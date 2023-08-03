@@ -40,17 +40,17 @@ FILE(GLOB cppsrc ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 # Library for external use
 add_library(${exe_base} SHARED ${cppsrc})
-target_link_libraries(${exe_base} ${fftw_lib})
+target_link_libraries(${exe_base} PRIVATE ${fftw_lib})
 install(TARGETS ${exe_base} DESTINATION ${PROJECT_NAME})
 
 # Make object files accessible (for sake of gtest code)
 add_library(${exe_lib} OBJECT ${cppsrc})
 target_compile_definitions(${exe_lib} PRIVATE src_dir="${CMAKE_SOURCE_DIR}")
-target_link_libraries(${exe_lib} ${fftw_lib})
+target_link_libraries(${exe_lib} PRIVATE ${fftw_lib})
 
 # Main executable (for testing compilation and running)
 add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
-target_link_libraries(${exe_name} ${fftw_lib})
+target_link_libraries(${exe_name} PRIVATE ${fftw_lib})
 
 include(utils.cmake)
 if (WAVES2AMR_ENABLE_CUDA)
@@ -63,9 +63,9 @@ endif()
 
 # AMReX
 init_amrex()
-target_link_libraries(${exe_base} AMReX::amrex)
-target_link_libraries(${exe_lib} AMReX::amrex)
-target_link_libraries(${exe_name} AMReX::amrex)
+target_link_libraries(${exe_base} PUBLIC AMReX::amrex)
+target_link_libraries(${exe_lib} PUBLIC AMReX::amrex)
+target_link_libraries(${exe_name} PUBLIC AMReX::amrex)
 
 if(WAVES2AMR_ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
