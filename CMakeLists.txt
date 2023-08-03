@@ -1,6 +1,5 @@
 ## This executable is just for making sure the setup can compile and run
 cmake_minimum_required (VERSION 3.14 FATAL_ERROR)
-set(CMAKE_CXX_COMPILER "g++")
 
 # Compiler flags
 if(NOT CMAKE_BUILD_TYPE)
@@ -9,7 +8,11 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall -Wextra -g -pedantic -std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3 -std=c++17")
 
-project(Waves2AMR)
+project(Waves2AMR CXX C)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(WAVES2AMR_USE_INTERNAL_AMREX "Add AMReX as subproject" ON)
