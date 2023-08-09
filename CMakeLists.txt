@@ -1,6 +1,5 @@
 ## This executable is just for making sure the setup can compile and run
 cmake_minimum_required (VERSION 3.14 FATAL_ERROR)
-set(CMAKE_CXX_COMPILER "g++")
 
 # Compiler flags
 if(NOT CMAKE_BUILD_TYPE)
@@ -9,7 +8,11 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall -Wextra -g -pedantic -std=c++17")
 set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3 -std=c++17")
 
-project(Waves2AMR)
+project(Waves2AMR CXX C)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(WAVES2AMR_USE_INTERNAL_AMREX "Add AMReX as subproject" ON)
@@ -37,17 +40,17 @@ FILE(GLOB cppsrc ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 # Library for external use
 add_library(${exe_base} SHARED ${cppsrc})
-target_link_libraries(${exe_base} ${fftw_lib})
+target_link_libraries(${exe_base} PRIVATE ${fftw_lib})
 install(TARGETS ${exe_base} DESTINATION ${PROJECT_NAME})
 
 # Make object files accessible (for sake of gtest code)
 add_library(${exe_lib} OBJECT ${cppsrc})
 target_compile_definitions(${exe_lib} PRIVATE src_dir="${CMAKE_SOURCE_DIR}")
-target_link_libraries(${exe_lib} ${fftw_lib})
+target_link_libraries(${exe_lib} PRIVATE ${fftw_lib})
 
 # Main executable (for testing compilation and running)
 add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
-target_link_libraries(${exe_name} ${fftw_lib})
+target_link_libraries(${exe_name} PRIVATE ${fftw_lib})
 
 include(utils.cmake)
 if (WAVES2AMR_ENABLE_CUDA)
@@ -60,9 +63,9 @@ endif()
 
 # AMReX
 init_amrex()
-target_link_libraries(${exe_base} AMReX::amrex)
-target_link_libraries(${exe_lib} AMReX::amrex)
-target_link_libraries(${exe_name} AMReX::amrex)
+target_link_libraries(${exe_base} PUBLIC AMReX::amrex)
+target_link_libraries(${exe_lib} PUBLIC AMReX::amrex)
+target_link_libraries(${exe_name} PUBLIC AMReX::amrex)
 
 if(WAVES2AMR_ENABLE_UNIT_TESTS)
   add_executable(${exe_utest_name})
