@@ -58,6 +58,9 @@ if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
    include(AMReXTargetHelpers)
 endif ()
 
+# FFTW library is required, but I need better sourcing
+set(fftw_lib ${CMAKE_CURRENT_SOURCE_DIR}/fftw/lib/libfftw3.a)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fftw/include/)
 
 #
 # Define the object library to compile
@@ -66,7 +69,9 @@ add_library(waves_2_amr OBJECT)
 if (BUILD_SHARED_LIBS)
   set_target_properties(waves_2_amr PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+# Link required libraries
 target_link_libraries(waves_2_amr PUBLIC AMReX::amrex)
+target_link_libraries(waves_2_amr PRIVATE ${fftw_lib})
 add_subdirectory(src)
 
 if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
@@ -96,7 +101,7 @@ list(FILTER WAVES2AMR_INCLUDES INCLUDE REGEX "\\.H")
 set_target_properties(
   waves_2_amr PROPERTIES PUBLIC_HEADER "${WAVES2AMR_INCLUDES}")
 
-# Install AMReX-Hydro
+# Install Waves2AMR
 install(
   TARGETS waves_2_amr_api waves_2_amr
   EXPORT ${PROJECT_NAME}Targets
