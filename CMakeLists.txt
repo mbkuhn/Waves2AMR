@@ -1,75 +1,124 @@
-## This executable is just for making sure the setup can compile and run
-cmake_minimum_required (VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14)
 
-# Compiler flags
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+project( Waves2AMR
+    LANGUAGES C CXX
+    )
+
+message(STATUS "CMake version: ${CMAKE_VERSION}")
+
+#
+# Check if CMAKE_BUILD_TYPE is given. If not, use default
+#
+if ( NOT CMAKE_BUILD_TYPE )
+   set(CMAKE_CONFIGURATION_TYPES "Release;Debug;MinSizeRel;RelWithDebInfo")
+   set(CMAKE_BUILD_TYPE Release
+       CACHE STRING
+       "Choose the build type, e.g. Release, Debug, or RelWithDebInfo." FORCE)
+else ()
+   message(STATUS "Build type set by user to '${CMAKE_BUILD_TYPE}'.")
 endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -Wall -Wextra -g -pedantic -std=c++17")
-set(CMAKE_CXX_FLAGS_RELEASE "-DNEDEBUG -O3 -std=c++17")
 
-project(Waves2AMR CXX C)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+#
 # Options
-option(WAVES2AMR_USE_INTERNAL_AMREX "Add AMReX as subproject" ON)
+#
 option(WAVES2AMR_ENABLE_MPI "Enable MPI" OFF)
-option(WAVES2AMR_ENABLE_OPENMP "Enable OpenMP" OFF)
-option(WAVES2AMR_ENABLE_FCOMPARE "Enable FCompare" OFF)
-option(WAVES2AMR_ENABLE_CUDA "Enable CUDA" OFF)
-option(WAVES2AMR_ENABLE_ROCM "Enable ROCm/HIP" OFF)
-option(WAVES2AMR_ENABLE_SYCL "Enable Intel OneAPI SyCL" OFF)
-option(WAVES2AMR_ENABLE_TINY_PROFILE "Enable AMReX TinyProfile support" OFF)
-option(WAVES2AMR_ENABLE_UNIT_TESTS "Enable unit testing" ON)
 
-# Target names
-set(exe_base "Waves2AMR")
-set(exe_name "${exe_base}_test")
-set(exe_utest_name "${exe_base}_unit_tests")
-set(exe_lib "${exe_base}_obj")
+set(WAVES2AMR_GPU_BACKEND_VALUES NONE SYCL CUDA HIP)
+set(WAVES2AMR_GPU_BACKEND NONE CACHE STRING "On-node, accelerated GPU backend: <NONE,SYCL,CUDA,HIP>")
+set_property(CACHE WAVES2AMR_GPU_BACKEND PROPERTY STRINGS ${WAVES2AMR_GPU_BACKEND_VALUES})
+if (NOT WAVES2AMR_GPU_BACKEND IN_LIST WAVES2AMR_GPU_BACKEND_VALUES)
+   message(FATAL_ERROR "WAVES2AMR_GPU_BACKEND=${WAVES2AMR_GPU_BACKEND} is not allowed."
+      " Must be one of ${WAVES2AMR_GPU_BACKEND_VALUES}")
+endif ()
 
-# FFTW
-set(fftw_lib ${CMAKE_CURRENT_SOURCE_DIR}/fftw/lib/libfftw3.a)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fftw/include/)
+#
+# Find AMReX, check for required components
+#
+if (NOT TARGET AMReX::amrex)
+   set(AMREX_REQUIRED_COMPONENTS 3D DOUBLE)
+   if (WAVES2AMR_ENABLE_MPI)
+      list(APPEND AMREX_REQUIRED_COMPONENTS MPI)
+   endif ()
+   if (NOT WAVES2AMR_GPU_BACKEND STREQUAL "NONE")
+      list(APPEND AMREX_REQUIRED_COMPONENTS ${WAVES2AMR_GPU_BACKEND})
+   endif ()
+   find_package(AMReX CONFIG REQUIRED ${AMREX_REQUIRED_COMPONENTS} )
+endif ()
 
-# Access source files
-FILE(GLOB cppsrc ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+#
+# Enable CUDA if requested
+#
+if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
+   # CMake 3.18+: CMAKE_CUDA_ARCHITECTURES
+   # https://cmake.org/cmake/help/latest/policy/CMP0104.html
+   if(POLICY CMP0104)
+      cmake_policy(SET CMP0104 OLD)
+   endif()
+   include(AMReX_SetupCUDA)
+   include(AMReXTargetHelpers)
+endif ()
 
-# Library for external use
-add_library(${exe_base} SHARED ${cppsrc})
-target_link_libraries(${exe_base} PRIVATE ${fftw_lib})
-install(TARGETS ${exe_base} DESTINATION ${PROJECT_NAME})
 
-# Make object files accessible (for sake of gtest code)
-add_library(${exe_lib} OBJECT ${cppsrc})
-target_compile_definitions(${exe_lib} PRIVATE src_dir="${CMAKE_SOURCE_DIR}")
-target_link_libraries(${exe_lib} PRIVATE ${fftw_lib})
-
-# Main executable (for testing compilation and running)
-add_executable(${exe_name} ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp ${cppsrc})
-target_link_libraries(${exe_name} PRIVATE ${fftw_lib})
-
-include(utils.cmake)
-if (WAVES2AMR_ENABLE_CUDA)
-  enable_language(CUDA)
-  set(w2atargets "${exe_lib};${exe_name}")
-  foreach(tgt IN LISTS w2atargets)
-    set_cuda_build_properties(${tgt})
-  endforeach()
+#
+# Define the object library to compile
+#
+add_library(waves_2_amr OBJECT)
+if (BUILD_SHARED_LIBS)
+  set_target_properties(waves_2_amr PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+target_link_libraries(waves_2_amr PUBLIC AMReX::amrex)
+add_subdirectory(src)
 
-# AMReX
-init_amrex()
-target_link_libraries(${exe_base} PUBLIC AMReX::amrex)
-target_link_libraries(${exe_lib} PUBLIC AMReX::amrex)
-target_link_libraries(${exe_name} PUBLIC AMReX::amrex)
+if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
+   setup_target_for_cuda_compilation(waves_2_amr)
+endif ()
 
-if(WAVES2AMR_ENABLE_UNIT_TESTS)
-  add_executable(${exe_utest_name})
-  add_subdirectory("submods/googletest")
-  add_subdirectory("unit_tests")
-  set_cuda_build_properties(${exe_utest_name})
+if ( NOT CMAKE_CXX_FLAGS )
+   target_link_libraries(waves_2_amr PUBLIC AMReX::Flags_CXX)
+endif ()
+
+
+# Installation rules
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
+# Create non-object library for use as external target
+add_library(waves_2_amr_api)
+if (BUILD_SHARED_LIBS)
+  set_target_properties(waves_2_amr_api PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+target_link_libraries(waves_2_amr_api PUBLIC waves_2_amr)
+add_library(${PROJECT_NAME}::waves_2_amr_api ALIAS waves_2_amr)
+
+# Collect all headers and make them installable with the target
+get_target_property(WAVES2AMR_INCLUDES waves_2_amr SOURCES)
+list(FILTER WAVES2AMR_INCLUDES INCLUDE REGEX "\\.H")
+set_target_properties(
+  waves_2_amr PROPERTIES PUBLIC_HEADER "${WAVES2AMR_INCLUDES}")
+
+# Install AMReX-Hydro
+install(
+  TARGETS waves_2_amr_api waves_2_amr
+  EXPORT ${PROJECT_NAME}Targets
+  RUNTIME       DESTINATION bin
+  ARCHIVE       DESTINATION lib
+  LIBRARY       DESTINATION lib
+  INCLUDES      DESTINATION include
+  PUBLIC_HEADER DESTINATION include
+  )
+
+# Make Waves2AMR discoverable using `find_package`
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+configure_package_config_file(
+  ${PROJECT_NAME}Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )

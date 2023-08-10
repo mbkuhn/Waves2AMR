@@ -1,0 +1,10 @@
+CEXE_headers += read_modes.h
+
+CEXE_sources += read_modes.cpp
+CEXE_sources += read_ascii.cpp
+
+CEXE_headers += modes_hosgrid.h
+CEXE_sources += modes_hosgrid.cpp
+
+CEXE_headers += interp_to_mfab.h
+CEXE_sources += interp_to_mfab.cpp
