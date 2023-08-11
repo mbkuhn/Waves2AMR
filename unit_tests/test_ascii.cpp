@@ -1,4 +1,4 @@
-#include "../src/read_modes.h"
+#include "read_modes.h"
 #include "gtest/gtest.h"
 #include <array>
 

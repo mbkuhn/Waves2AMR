@@ -1,4 +1,4 @@
-#include "../src/interp_to_mfab.h"
+#include "interp_to_mfab.h"
 #include "gtest/gtest.h"
 
 namespace w2a_tests {

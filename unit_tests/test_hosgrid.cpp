@@ -1,4 +1,4 @@
-#include "../src/modes_hosgrid.h"
+#include "modes_hosgrid.h"
 #include "gtest/gtest.h"
 #include <array>
 
