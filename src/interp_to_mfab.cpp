@@ -10,7 +10,7 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
                                          const amrex::Real z_wlev,
                                          const amrex::Real z_btm, int n_above) {
   // Ensure that routine is not misused
-  if (n == 0 || dz0 < 1e-10 || z_btm <= z_wlev || n_above >= n) {
+  if (n == 0 || dz0 < 1e-10 || z_wlev <= z_btm || n_above >= n) {
     amrex::Abort("interp_to_mfab::create_height_vector() has faulty inputs, "
                  "preventing height vector from being formed. n = " +
                  std::to_string(n) + ", dz0 = " + std::to_string(dz0) +
@@ -57,8 +57,6 @@ int interp_to_mfab::create_height_vector(amrex::Vector<amrex::Real> &hvec,
       flag = 3;
     } else if (std::isnan(r) || std::isinf(r)) {
       flag = 4;
-    } else if (l <= 0.0) {
-      flag = 5;
     }
     if (flag > 0) {
       // Array is flawed. pass flag to abort program
