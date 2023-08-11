@@ -97,7 +97,7 @@ add_library(${PROJECT_NAME}::waves_2_amr_api ALIAS waves_2_amr)
 
 # Collect all headers and make them installable with the target
 get_target_property(WAVES2AMR_INCLUDES waves_2_amr SOURCES)
-list(FILTER WAVES2AMR_INCLUDES INCLUDE REGEX "\\.H")
+list(FILTER WAVES2AMR_INCLUDES INCLUDE REGEX "\\.h")
 set_target_properties(
   waves_2_amr PROPERTIES PUBLIC_HEADER "${WAVES2AMR_INCLUDES}")
 
