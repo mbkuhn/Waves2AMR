@@ -73,6 +73,7 @@ endif()
 target_link_libraries(waves_2_amr PUBLIC AMReX::amrex)
 target_link_libraries(waves_2_amr PRIVATE ${fftw_lib})
 add_subdirectory(src)
+add_subdirectory(include)
 
 if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
    setup_target_for_cuda_compilation(waves_2_amr)
