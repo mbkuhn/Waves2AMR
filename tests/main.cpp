@@ -1,4 +1,4 @@
-#include "../Waves2AMR.h"
+#include "Waves2AMR.h"
 
 int main(int argc, char *argv[]) {
   // Set up AMReX

@@ -1,4 +1,4 @@
-#include "../Waves2AMR.h"
+#include "Waves2AMR.h"
 #include "gtest/gtest.h"
 #include <array>
 
