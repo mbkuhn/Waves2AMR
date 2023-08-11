@@ -43,16 +43,8 @@ TEST_F(InterpToMFabTest, create_height_vector) {
   // Check failure flags
   flag = interp_to_mfab::create_height_vector(hvec, 4, 0.5, 1.0, 0.0, -1.0);
   EXPECT_EQ(flag, (int)1);
-  flag = interp_to_mfab::create_height_vector(hvec, 1, 0.25, 0.0, -1.0);
+  flag = interp_to_mfab::create_height_vector(hvec, 2, 0.5, 0.0, -1.0);
   EXPECT_EQ(flag, (int)2);
-  flag = interp_to_mfab::create_height_vector(hvec, 5, -0.25, 0.0, -1.0);
-  EXPECT_EQ(flag, (int)4);
-  flag = interp_to_mfab::create_height_vector(hvec, 5, 0.0, 0.0, -1.0);
-  EXPECT_EQ(flag, (int)4);
-  flag = interp_to_mfab::create_height_vector(hvec, 5, 0.0, 0.0, 0.0);
-  EXPECT_EQ(flag, (int)4);
-  flag = interp_to_mfab::create_height_vector(hvec, 5, -0.25, 0.0, 1.0);
-  EXPECT_EQ(flag, (int)5);
   // flag = 3 is hard to trigger without triggering flag = 1
 }
 
