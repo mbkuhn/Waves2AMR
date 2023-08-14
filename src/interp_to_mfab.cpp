@@ -359,7 +359,7 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
         ++i0;
         x0 = spd_dx * i0;
       }
-      while (i0 > 0 && x0 > xc) {
+      while (i0 > 0 && x0 > xc || i0 >= spd_nx) {
         --i0;
         x0 = spd_dx * i0;
       }
@@ -367,7 +367,7 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
         ++j0;
         y0 = spd_dy * j0;
       }
-      while (j0 > 0 && y0 > yc) {
+      while (j0 > 0 && y0 > yc || j0 >= spd_ny) {
         --j0;
         y0 = spd_dy * j0;
       }
@@ -380,10 +380,10 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
       i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
       j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
       // Form indices for 1D vector of 3D data
-      const int idx00 = i0 * spd_ny + j0;
-      const int idx10 = i1 * spd_ny + j0;
-      const int idx01 = i0 * spd_ny + j1;
-      const int idx11 = i1 * spd_ny + j1;
+      const int idx00 = i0 + j0 * spd_nx;
+      const int idx10 = i1 + j0 * spd_nx;
+      const int idx01 = i0 + j1 * spd_nx;
+      const int idx11 = i1 + j1 * spd_nx;
       // Get surrounding data
       const amrex::Real e00 = etavec_ptr[idx00];
       const amrex::Real e10 = etavec_ptr[idx10];
@@ -446,13 +446,12 @@ void interp_to_mfab::interp_velocity_to_multifab(
       amrex::Real x0 = spd_dx * i0, x1 = spd_dx * i1;
       amrex::Real y0 = spd_dy * j0, y1 = spd_dy * j1;
       amrex::Real z0 = hvec_ptr[k_blw], z1 = hvec_ptr[k_abv];
-      // Should there be an offset?
       // Get surrounding indices (go forward, go backward)
       while (i0 < spd_nx - 2 && x0 - spd_dx < xc) {
         ++i0;
         x0 = spd_dx * i0;
       }
-      while (i0 > 0 && x0 > xc) {
+      while (i0 > 0 && x0 > xc || i0 >= spd_nx) {
         --i0;
         x0 = spd_dx * i0;
       }
@@ -460,7 +459,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         ++j0;
         y0 = spd_dy * j0;
       }
-      while (j0 > 0 && y0 > yc) {
+      while (j0 > 0 && y0 > yc || j0 >= spd_ny) {
         --j0;
         y0 = spd_dy * j0;
       }
@@ -484,14 +483,14 @@ void interp_to_mfab::interp_velocity_to_multifab(
       i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
       j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
       // Form indices for 1D vector of 3D data
-      const int idx000 = k_blw * spd_nx * spd_ny + i0 * spd_ny + j0;
-      const int idx100 = k_blw * spd_nx * spd_ny + i1 * spd_ny + j0;
-      const int idx010 = k_blw * spd_nx * spd_ny + i0 * spd_ny + j1;
-      const int idx110 = k_blw * spd_nx * spd_ny + i1 * spd_ny + j1;
-      const int idx001 = k_abv * spd_nx * spd_ny + i0 * spd_ny + j0;
-      const int idx101 = k_abv * spd_nx * spd_ny + i1 * spd_ny + j0;
-      const int idx011 = k_abv * spd_nx * spd_ny + i0 * spd_ny + j1;
-      const int idx111 = k_abv * spd_nx * spd_ny + i1 * spd_ny + j1;
+      const int idx000 = i0 + j0 * spd_nx + k_blw * spd_nx * spd_ny;
+      const int idx100 = i1 + j0 * spd_nx + k_blw * spd_nx * spd_ny;
+      const int idx010 = i0 + j1 * spd_nx + k_blw * spd_nx * spd_ny;
+      const int idx110 = i1 + j1 * spd_nx + k_blw * spd_nx * spd_ny;
+      const int idx001 = i0 + j0 * spd_nx + k_abv * spd_nx * spd_ny;
+      const int idx101 = i1 + j0 * spd_nx + k_abv * spd_nx * spd_ny;
+      const int idx011 = i0 + j1 * spd_nx + k_abv * spd_nx * spd_ny;
+      const int idx111 = i1 + j1 * spd_nx + k_abv * spd_nx * spd_ny;
       // Get surrounding data
       const amrex::Real u000 = uvec_ptr[idx000];
       const amrex::Real u100 = uvec_ptr[idx100];
@@ -528,8 +527,8 @@ void interp_to_mfab::interp_velocity_to_multifab(
           linear_interp(w000, w100, w010, w001, w110, w101, w011, w111, xc, yc,
                         zc, x0, y0, z0, x1, y1, z1);
 
-      // If lower edge of cell is above highest points from hos spatial data,
-      // populate velocity with zeros
+      // If lower edge of cell is above highest points from hos spatial
+      // data, populate velocity with zeros
       if (zc - 0.5 * dx[2] > z1) {
         varr(i, j, k, 0) = 0.0;
         varr(i, j, k, 1) = 0.0;
