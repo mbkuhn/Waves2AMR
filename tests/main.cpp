@@ -127,6 +127,7 @@ int main(int argc, char *argv[]) {
     modes_hosgrid::populate_hos_vel(n0, n1, xlen, ylen, depth, ht, dimL, dimT,
                                     mX, mY, mZ, plan, u_modes, v_modes, w_modes,
                                     hos_u_vec, hos_v_vec, hos_w_vec, indv);
+    indv += n0 * n1;
   }
 
   // Interpolate to multifab
