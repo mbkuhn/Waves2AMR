@@ -441,6 +441,12 @@ void interp_to_mfab::interp_velocity_to_multifab(
       // Initial positions and indices of HOS spatial data vectors
       int i0 = xc / spd_dx;
       int j0 = yc / spd_dy;
+      // Indvec maps from ordinary indices [0 .. number of overlapping heights]
+      // to indices in the height vector [lowest overlapping index .. highest
+      // overlapping index]. It does not correspond to the indices of heights in
+      // the spatial hos data; those correspond to the original, ordinary
+      // indices. Also, indvec is always continuous, allowing conversion of
+      // indices by an offset.
       int k_abv = indvec_ptr[0];
       int i1 = i0 + 1, j1 = j0 + 1, k_blw = k_abv + 1;
       amrex::Real x0 = spd_dx * i0, x1 = spd_dx * i1;
@@ -482,15 +488,18 @@ void interp_to_mfab::interp_velocity_to_multifab(
       // Periodicity for indices
       i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
       j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
+      // Offset k index to correctly access spatial data
+      const int ok_blw = k_blw - indvec_ptr[0];
+      const int ok_abv = k_abv - indvec_ptr[0];
       // Form indices for 1D vector of 3D data
-      const int idx000 = i0 + j0 * spd_nx + k_blw * spd_nx * spd_ny;
-      const int idx100 = i1 + j0 * spd_nx + k_blw * spd_nx * spd_ny;
-      const int idx010 = i0 + j1 * spd_nx + k_blw * spd_nx * spd_ny;
-      const int idx110 = i1 + j1 * spd_nx + k_blw * spd_nx * spd_ny;
-      const int idx001 = i0 + j0 * spd_nx + k_abv * spd_nx * spd_ny;
-      const int idx101 = i1 + j0 * spd_nx + k_abv * spd_nx * spd_ny;
-      const int idx011 = i0 + j1 * spd_nx + k_abv * spd_nx * spd_ny;
-      const int idx111 = i1 + j1 * spd_nx + k_abv * spd_nx * spd_ny;
+      const int idx000 = i0 + j0 * spd_nx + ok_blw * spd_nx * spd_ny;
+      const int idx100 = i1 + j0 * spd_nx + ok_blw * spd_nx * spd_ny;
+      const int idx010 = i0 + j1 * spd_nx + ok_blw * spd_nx * spd_ny;
+      const int idx110 = i1 + j1 * spd_nx + ok_blw * spd_nx * spd_ny;
+      const int idx001 = i0 + j0 * spd_nx + ok_abv * spd_nx * spd_ny;
+      const int idx101 = i1 + j0 * spd_nx + ok_abv * spd_nx * spd_ny;
+      const int idx011 = i0 + j1 * spd_nx + ok_abv * spd_nx * spd_ny;
+      const int idx111 = i1 + j1 * spd_nx + ok_abv * spd_nx * spd_ny;
       // Get surrounding data
       const amrex::Real u000 = uvec_ptr[idx000];
       const amrex::Real u100 = uvec_ptr[idx100];
