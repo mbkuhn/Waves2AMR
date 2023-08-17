@@ -114,6 +114,24 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   indsize = indvec_no.size();
   EXPECT_EQ(indsize, 0);
   EXPECT_EQ(flag, 1);
+
+  // Test scenario where mfab is between points, but no points are in mfab
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_wi{0., 0., -0.8};
+  problo[0] = problo_wi;
+  problo[1] = problo_wi;
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_wi0{0.01, 0.01, 0.01};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_wi1{0.005, 0.005, 0.005};
+  dx[0] = dx_wi0;
+  dx[1] = dx_wi1;
+  amrex::Vector<int> indvec_wi;
+  flag = interp_to_mfab::get_local_height_indices(indvec_wi, hvec, field_fabs,
+                                                  problo, dx);
+  indsize = indvec_wi.size();
+  EXPECT_EQ(indsize, 2);
+  EXPECT_EQ(flag, 0);
+  for (int n = 0; n < indsize; ++n) {
+    EXPECT_EQ(n + 3, indvec_wi[n]);
+  }
 }
 
 TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
