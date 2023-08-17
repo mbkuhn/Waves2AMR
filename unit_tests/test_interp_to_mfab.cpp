@@ -4,6 +4,7 @@
 namespace w2a_tests {
 
 namespace {
+
 amrex::Real sum_multifab(amrex::MultiFab &mf, int icomp) {
   amrex::Real f_sum = 0.0;
   f_sum += amrex::ReduceSum(
@@ -19,6 +20,87 @@ amrex::Real sum_multifab(amrex::MultiFab &mf, int icomp) {
       });
   return f_sum;
 }
+
+void initialize_eta(amrex::Gpu::DeviceVector<amrex::Real> &HOS_eta, int spd_nx,
+                    int spd_ny) {
+  // Get pointers to eta because it is on device
+  auto *eta_ptr = HOS_eta.data();
+  // Get size for loop
+  const int n2D = HOS_eta.size();
+  // Multiply each component of velocity vectors in given range of indices to
+  // dimensionalize the velocity
+  int j_half = spd_ny / 2;
+  amrex::ParallelFor(n2D, [=] AMREX_GPU_DEVICE(int n) {
+    // Row-major - get i and j
+    int j = n / spd_nx;
+    int i = n - j * spd_nx;
+    eta_ptr[n] = (j < j_half ? 1.0 : -1.0);
+  });
+}
+
+amrex::Real error_eta(amrex::MultiFab &mf, int ny, amrex::Real zsl,
+                      amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> plo,
+                      amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx) {
+  amrex::Real f_sum = 0.0;
+  int j_half = ny / 2;
+  f_sum += amrex::ReduceSum(
+      mf, 0,
+      [=] AMREX_GPU_HOST_DEVICE(
+          amrex::Box const &bx,
+          amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
+        amrex::Real f_sum_fab = 0;
+        amrex::Loop(bx, [=, &f_sum_fab](int i, int j, int k) noexcept {
+          amrex::Real sol = j < j_half ? 1.0 : -1.0;
+          const amrex::Real z = plo[2] + (k + 0.5) * dx[2];
+          // Avoid interpolation points to keep things simple
+          if (j != j_half - 1 && j != ny - 1) {
+            f_sum_fab += std::abs(fab_arr(i, j, k) - (sol + zsl - z));
+          }
+        });
+        return f_sum_fab;
+      });
+  return f_sum;
+}
+
+void initialize_velocity_component(amrex::Gpu::DeviceVector<amrex::Real> &HOS_u,
+                                   int spd_nx, int spd_ny) {
+  // Get pointers to eta because it is on device
+  auto *u_ptr = HOS_u.data();
+  // Get size for loop
+  const int n2D = HOS_u.size();
+  // Multiply each component of velocity vectors in given range of indices to
+  // dimensionalize the velocity
+  int i_half = spd_nx / 2;
+  amrex::ParallelFor(n2D, [=] AMREX_GPU_DEVICE(int n) {
+    // Row-major - get i and j
+    int j = n / spd_nx;
+    int i = n - j * spd_nx;
+    u_ptr[n] = (i < i_half ? 1.0 : -1.0);
+  });
+}
+
+amrex::Real error_velocity(amrex::MultiFab &mf, int nx) {
+  amrex::Real f_sum = 0.0;
+  int i_half = nx / 2;
+  f_sum += amrex::ReduceSum(
+      mf, 0,
+      [=] AMREX_GPU_HOST_DEVICE(
+          amrex::Box const &bx,
+          amrex::Array4<amrex::Real const> const &fab_arr) -> amrex::Real {
+        amrex::Real f_sum_fab = 0;
+        amrex::Loop(bx, 3,
+                    [=, &f_sum_fab](int i, int j, int k, int n) noexcept {
+                      amrex::Real sol = i < i_half ? 1.0 : -1.0;
+                      // Avoid interpolation points to keep things simple
+                      if (i != i_half - 1 && i != nx - 1) {
+                        f_sum_fab += std::abs(fab_arr(i, j, k, n) - sol);
+                      }
+                    });
+        return f_sum_fab;
+      });
+  return f_sum;
+}
+
 } // namespace
 
 class InterpToMFabTest : public testing::Test {};
@@ -132,6 +214,46 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   for (int n = 0; n < indsize; ++n) {
     EXPECT_EQ(n + 3, indvec_wi[n]);
   }
+}
+
+TEST_F(InterpToMFabTest, interp_eta_to_multifab_lateral) {
+  // Set up 2D dimensions
+  const int spd_nx = 10, spd_ny = 20;
+  const amrex::Real spd_dx = 0.1, spd_dy = 0.05;
+
+  // Set up eta data
+  amrex::Gpu::DeviceVector<amrex::Real> deta(spd_nx * spd_ny, 0.0);
+  initialize_eta(deta, spd_nx, spd_ny);
+  // Call function to populate
+  amrex::Gpu::DeviceVector<amrex::Real> etavec;
+  amrex::Gpu::DeviceVector<amrex::Real> vvec;
+  amrex::Gpu::DeviceVector<amrex::Real> wvec;
+  // U, V, W are all initialized, checked the same way
+  etavec.insert(etavec.end(), deta.begin(), deta.end());
+
+  // Set up target mfabs and mesh
+  const int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},
+                                amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 1;
+  const int nghost = 3;
+  amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.125, 0.125, 0.125};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_lev{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_lev};
+
+  // Perform interpolation
+  const amrex::Real zsl = 0.0;
+  interp_to_mfab::interp_eta_to_levelset_field(
+      spd_nx, spd_ny, spd_dx, spd_dy, zsl, etavec, field_fabs, problo, dx);
+  // Check error directly
+  const amrex::Real error = error_eta(mf, nz, zsl, problo[0], dx[0]);
+  EXPECT_NEAR(error, 0.0, 1e-8);
+  //  Note: this checks variation in y, ensures i, j indices aren't mixed up
 }
 
 TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
@@ -279,6 +401,61 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab_modindices) {
   EXPECT_NEAR(mf_sum_v, v_sum, 1e-8);
   EXPECT_NEAR(mf_sum_w, w_sum, 1e-8);
   //  Note: this only checks variation in z
+}
+
+TEST_F(InterpToMFabTest, interp_velocity_to_multifab_lateral) {
+  // Set up 2D dimensions
+  const int spd_nx = 10, spd_ny = 20;
+  const amrex::Real spd_dx = 0.1, spd_dy = 0.05;
+  // Set up heights - not concerned with vertical interp
+  int nheights = 2;
+  amrex::Vector<amrex::Real> hvec;
+  hvec.resize(nheights);
+  hvec[0] = 1.5;
+  hvec[1] = -2.0;
+  // Set up velocity data
+  amrex::Gpu::DeviceVector<amrex::Real> dv(spd_nx * spd_ny, 0.0);
+  initialize_velocity_component(dv, spd_nx, spd_ny);
+  // Call function to populate
+  amrex::Gpu::DeviceVector<amrex::Real> uvec;
+  amrex::Gpu::DeviceVector<amrex::Real> vvec;
+  amrex::Gpu::DeviceVector<amrex::Real> wvec;
+  // U, V, W are all initialized, checked the same way
+  uvec.insert(uvec.end(), dv.begin(), dv.end());
+  uvec.insert(uvec.end(), dv.begin(), dv.end());
+  vvec.insert(vvec.end(), dv.begin(), dv.end());
+  vvec.insert(vvec.end(), dv.begin(), dv.end());
+  wvec.insert(wvec.end(), dv.begin(), dv.end());
+  wvec.insert(wvec.end(), dv.begin(), dv.end());
+
+  // Set up target mfabs and mesh
+  const int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},
+                                amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 3;
+  const int nghost = 3;
+  amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.125, 0.125, 0.125};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_lev{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_lev};
+  // Get indices
+  amrex::Vector<int> indvec;
+  int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
+                                                      problo, dx);
+  EXPECT_EQ(flag, 0);
+
+  // Perform interpolation
+  interp_to_mfab::interp_velocity_to_field(spd_nx, spd_ny, spd_dx, spd_dy,
+                                           indvec, hvec, uvec, vvec, wvec,
+                                           field_fabs, problo, dx);
+  // Check error directly
+  const amrex::Real error = error_velocity(mf, nz);
+  EXPECT_NEAR(error, 0.0, 1e-8);
+  //  Note: this checks variation in x, ensures i, j indices aren't mixed up
 }
 
 TEST_F(InterpToMFabTest, linear_interp) {
