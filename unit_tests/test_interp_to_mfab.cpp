@@ -189,6 +189,80 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
   //  Note: this only checks variation in z
 }
 
+TEST_F(InterpToMFabTest, interp_velocity_to_multifab_modindices) {
+  // Set up 2D dimensions
+  const int spd_nx = 10, spd_ny = 20;
+  const amrex::Real spd_dx = 0.1, spd_dy = 0.05;
+  // Set up heights
+  int nheights = 5;
+  amrex::Vector<amrex::Real> hvec;
+  hvec.resize(nheights);
+  hvec[0] = 1.0;
+  hvec[1] = 0.0;
+  hvec[2] = -3. / 4.;
+  hvec[3] = -1.0;
+  hvec[4] = -2.0;
+  // Set up velocity data
+  amrex::Gpu::DeviceVector<amrex::Real> dv2(spd_nx * spd_ny, 2.0);
+  amrex::Gpu::DeviceVector<amrex::Real> dv3(spd_nx * spd_ny, 3.0);
+  amrex::Gpu::DeviceVector<amrex::Real> dv4(spd_nx * spd_ny, 4.0);
+  amrex::Gpu::DeviceVector<amrex::Real> uvec; //{dv2, dv2, dv2};
+  amrex::Gpu::DeviceVector<amrex::Real> vvec; //{dv2, dv3, dv4};
+  amrex::Gpu::DeviceVector<amrex::Real> wvec; //{dv4, dv4, dv3};
+  // There are 5 heights, but only 3 overlap with amr domain
+  // U velocity is dv2 at all three heights
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
+  uvec.insert(uvec.end(), dv2.begin(), dv2.end());
+  // V velocity is {dv2, dv3, dv4}
+  vvec.insert(vvec.end(), dv2.begin(), dv2.end());
+  vvec.insert(vvec.end(), dv3.begin(), dv3.end());
+  vvec.insert(vvec.end(), dv4.begin(), dv4.end());
+  // W velocity is {dv4, dv4, dv3}
+  wvec.insert(wvec.end(), dv4.begin(), dv4.end());
+  wvec.insert(wvec.end(), dv4.begin(), dv4.end());
+  wvec.insert(wvec.end(), dv3.begin(), dv3.end());
+
+  // Set up target mfabs and mesh
+  const int nz = 8;
+  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 0},
+                                amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::DistributionMapping dm{ba};
+  const int ncomp = 3;
+  const int nghost = 3;
+  amrex::MultiFab mf(ba, dm, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs{&mf};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.125, 0.125, 0.125};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_lev{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_lev};
+  // Set available indices to the 3 middle heights
+  amrex::Vector<int> indvec{1, 2, 3};
+
+  // Perform interpolation
+  interp_to_mfab::interp_velocity_to_field(spd_nx, spd_ny, spd_dx, spd_dy,
+                                           indvec, hvec, uvec, vvec, wvec,
+                                           field_fabs, problo, dx);
+  // Check sum
+  const amrex::Real mf_sum_u = sum_multifab(*field_fabs[0], 0);
+  const amrex::Real mf_sum_v = sum_multifab(*field_fabs[0], 1);
+  const amrex::Real mf_sum_w = sum_multifab(*field_fabs[0], 2);
+  const amrex::Real u_sum = 2.0 * nz * nz * nz;
+  const amrex::Real v_sum =
+      ((2.0 + (4. / 3.) * (1. / 16.)) + (2.0 + (4. / 3.) * (3. / 16.)) +
+       (2.0 + (4. / 3.) * (5. / 16.)) + (2.0 + (4. / 3.) * (7. / 16.)) +
+       (2.0 + (4. / 3.) * (9. / 16.)) + (2.0 + (4. / 3.) * (11. / 16.)) +
+       (3.0 + (4. / 1.) * (1. / 16.)) + (3.0 + (4. / 1.) * (3. / 16.))) *
+      nz * nz;
+  const amrex::Real w_sum =
+      (6.0 * 4.0 + (4.0 - 1. / 4.) + (3.0 + 1. / 4.)) * nz * nz;
+  EXPECT_NEAR(mf_sum_u, u_sum, 1e-8);
+  EXPECT_NEAR(mf_sum_v, v_sum, 1e-8);
+  EXPECT_NEAR(mf_sum_w, w_sum, 1e-8);
+  //  Note: this only checks variation in z
+}
+
 TEST_F(InterpToMFabTest, linear_interp) {
   // Test points directly
   amrex::Real x1 = 1.0, y1 = 1.0, z1 = 1.0;
