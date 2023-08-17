@@ -162,8 +162,9 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
                                          amrex::Real &mesh_zlo,
                                          amrex::Real &mesh_zhi) {
   // Loop through height vector and get first and last indices
-  int itop = -1; // top index is lowest ind, highest height
-  int ibtm = -1; // btm index is highest ind, lowest height
+  int itop = -1;           // top index is lowest ind, highest height
+  int ibtm = -1;           // btm index is highest ind, lowest height
+  bool noovlp_btw = false; // bool for edge case
   int nheights = hvec.size();
   for (int nh = 0; nh < nheights; ++nh) {
     if (itop == -1 && hvec[nh] <= mesh_zhi && hvec[nh] >= mesh_zlo) {
@@ -173,6 +174,14 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
     if (ibtm != -1 && hvec[nh] >= mesh_zlo) {
       ibtm = nh;
     }
+    // Where no points overlap with multifab, but multifab is between points
+    if (nh != nheights - 1) {
+      if (itop == -1 && hvec[nh] > mesh_zhi && hvec[nh + 1] < mesh_zlo) {
+        itop = nh;
+        ibtm = nh + 1;
+        noovlp_btw = true;
+      }
+    }
   }
 
   // If there are no overlapping points
@@ -181,8 +190,10 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
   }
 
   // Expand indices to surround mfab points if possible
-  itop = amrex::max(0, itop - 1);
-  ibtm = amrex::min(ibtm + 1, nheights - 1);
+  if (!noovlp_btw) {
+    itop = amrex::max(0, itop - 1);
+    ibtm = amrex::min(ibtm + 1, nheights - 1);
+  }
 
   // Make vector of indices
   indvec.resize(ibtm - itop + 1);
