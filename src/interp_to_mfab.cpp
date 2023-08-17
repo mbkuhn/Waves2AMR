@@ -390,7 +390,8 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
       // Periodicity for indices
       i1 = (i1 >= spd_nx) ? i1 - spd_nx : i1;
       j1 = (j1 >= spd_ny) ? j1 - spd_ny : j1;
-      // Form indices for 1D vector of 3D data
+      // Form indices for 1D vector of 2D data
+      // Row-major is a consequence of performing 2D FFT in C++
       const int idx00 = i0 + j0 * spd_nx;
       const int idx10 = i1 + j0 * spd_nx;
       const int idx01 = i0 + j1 * spd_nx;
@@ -503,6 +504,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
       const int ok_blw = k_blw - indvec_ptr[0];
       const int ok_abv = k_abv - indvec_ptr[0];
       // Form indices for 1D vector of 3D data
+      // Row-major is a consequence of performing 2D FFT in C++
       const int idx000 = i0 + j0 * spd_nx + ok_blw * spd_nx * spd_ny;
       const int idx100 = i1 + j0 * spd_nx + ok_blw * spd_nx * spd_ny;
       const int idx010 = i0 + j1 * spd_nx + ok_blw * spd_nx * spd_ny;
