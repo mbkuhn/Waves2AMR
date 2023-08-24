@@ -142,14 +142,17 @@ int interp_to_mfab::get_local_height_indices(
   return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
 }
 
+// !! -- This assumes cell-centered locations are what matters -- !! //
 void interp_to_mfab::get_mfab_mesh_bounds(
     amrex::MultiFab &mfab, amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx, amrex::Real &mesh_zlo,
     amrex::Real &mesh_zhi, int idim) {
   for (amrex::MFIter mfi(mfab); mfi.isValid(); ++mfi) {
     const auto &bx = mfi.growntilebox();
-    const amrex::Real mfab_hi = problo[idim] + bx.bigEnd(idim) * dx[idim];
-    const amrex::Real mfab_lo = problo[idim] + bx.smallEnd(idim) * dx[idim];
+    const amrex::Real mfab_hi =
+        problo[idim] + (bx.bigEnd(idim) + 0.5) * dx[idim];
+    const amrex::Real mfab_lo =
+        problo[idim] + (bx.smallEnd(idim) + 0.5) * dx[idim];
     mesh_zlo = std::min(mfab_lo, mesh_zlo);
     mesh_zhi = std::max(mfab_hi, mesh_zhi);
   }
