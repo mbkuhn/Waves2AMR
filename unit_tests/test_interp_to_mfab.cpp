@@ -216,6 +216,96 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   }
 }
 
+TEST_F(InterpToMFabTest, check_lateral_overlap) {
+  // Make vectors of GpuArrays for geometry information
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{1. / 32., 1. / 32.,
+                                                       1. / 32.};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev1{1. / 64., 1. / 64.,
+                                                       1. / 64.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev0,
+                                                                 dx_lev1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -0.5};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_all, problo_all};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> probhi_all{1., 1., 0.5};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi{
+      probhi_all, probhi_all};
+
+  // Make vector of const multifabs (like an AMR-Wind field)
+  const int nz = 8;
+  amrex::BoxArray ba_lo(amrex::Box(amrex::IntVect{0, 0, 0},
+                                   amrex::IntVect{nz - 1, nz - 1, nz - 1}));
+  amrex::BoxArray ba_hi0(amrex::Box(amrex::IntVect{32 - nz, 32 - nz, 32 - nz},
+                                    amrex::IntVect{32 - 1, 32 - 1, 32 - 1}));
+  amrex::BoxArray ba_hi1(amrex::Box(amrex::IntVect{64 - nz, 64 - nz, 64 - nz},
+                                    amrex::IntVect{64 - 1, 64 - 1, 64 - 1}));
+  amrex::BoxArray ba_mid0(amrex::Box(amrex::IntVect{16 - nz, 16 - nz, 16 - nz},
+                                     amrex::IntVect{16 - 1, 16 - 1, 16 - 1}));
+  amrex::BoxArray ba_mid1(amrex::Box(amrex::IntVect{48 - nz, 48 - nz, 48 - nz},
+                                     amrex::IntVect{48 - 1, 48 - 1, 48 - 1}));
+  // ranges: lo [0., 0.25], mid [0.25, 0.5], and hi [0.75, 1.0]. cc w/ ghosts:
+  // [-0.078125, 0.328125], [0.171875, 0.578125], and [0.671875, 1.078125]
+
+  amrex::DistributionMapping dm_lo{ba_lo};
+  amrex::DistributionMapping dm_hi0{ba_hi0};
+  amrex::DistributionMapping dm_hi1{ba_hi1};
+  amrex::DistributionMapping dm_mid0{ba_mid0};
+  amrex::DistributionMapping dm_mid1{ba_mid1};
+
+  const int ncomp = 3;
+  const int nghost = 3;
+  amrex::MultiFab mf_lo0(ba_lo, dm_lo, ncomp, nghost);
+  amrex::MultiFab mf_lo1(ba_lo, dm_lo, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs_lo{&mf_lo0, &mf_lo1};
+  amrex::MultiFab mf_hi0(ba_hi0, dm_hi0, ncomp, nghost);
+  amrex::MultiFab mf_hi1(ba_hi1, dm_hi1, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs_hi{&mf_hi0, &mf_hi1};
+  amrex::MultiFab mf_mid0(ba_mid0, dm_mid0, ncomp, nghost);
+  amrex::MultiFab mf_mid1(ba_mid1, dm_mid1, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> field_fabs_mid{&mf_mid0, &mf_mid1};
+
+  // More precise checks are to ensure use of cell-centered locations
+
+  // Checks with lo mfabs
+  int flag = interp_to_mfab::check_lateral_overlap_hi(
+      21. / 32. + 1e-8, 0, field_fabs_lo, problo, probhi, dx);
+  EXPECT_EQ(flag, 0);
+  flag = interp_to_mfab::check_lateral_overlap_hi(
+      21.5 / 32. + 1e-8, 0, field_fabs_lo, problo, probhi, dx);
+  EXPECT_EQ(flag, 1);
+  flag = interp_to_mfab::check_lateral_overlap_lo(0.1, 0, field_fabs_lo, problo,
+                                                  probhi, dx);
+  EXPECT_EQ(flag, 1);
+
+  // Checks with hi mfabs
+  flag = interp_to_mfab::check_lateral_overlap_hi(0.1, 0, field_fabs_hi, problo,
+                                                  probhi, dx);
+  EXPECT_EQ(flag, 1);
+  flag = interp_to_mfab::check_lateral_overlap_lo(
+      21. / 32. + 1e-8, 0, field_fabs_hi, problo, probhi, dx);
+  EXPECT_EQ(flag, 0);
+
+  // Checks with mid mfabs
+  flag = interp_to_mfab::check_lateral_overlap_hi(0.1, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 0);
+  flag = interp_to_mfab::check_lateral_overlap_lo(0.1, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 0);
+  flag = interp_to_mfab::check_lateral_overlap_hi(0.3, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 1);
+  flag = interp_to_mfab::check_lateral_overlap_lo(0.5, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 1);
+  flag = interp_to_mfab::check_lateral_overlap_hi(0.9, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 1);
+  flag = interp_to_mfab::check_lateral_overlap_lo(0.9, 0, field_fabs_mid,
+                                                  problo, probhi, dx);
+  EXPECT_EQ(flag, 1);
+}
+
 TEST_F(InterpToMFabTest, interp_eta_to_multifab_lateral) {
   // Set up 2D dimensions
   const int spd_nx = 10, spd_ny = 20;
