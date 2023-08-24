@@ -96,8 +96,7 @@ int interp_to_mfab::get_local_height_indices(
   for (int nl = 0; nl < nlevels; ++nl) {
     auto problo = geom[nl].ProbLoArray();
     auto dx = geom[nl].CellSizeArray();
-    local_height_mfab_ops(hvec, *field_fabs[nl], problo, dx, mesh_zlo,
-                          mesh_zhi);
+    get_mfab_mesh_bounds(*field_fabs[nl], problo, dx, mesh_zlo, mesh_zhi);
   }
 
   return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
@@ -119,8 +118,8 @@ int interp_to_mfab::get_local_height_indices(
   const int nlevels = field_fabs.size();
   // Loop through levels and mfabs and get max/min bounds
   for (int nl = 0; nl < nlevels; ++nl) {
-    local_height_mfab_ops(hvec, *field_fabs[nl], problo_vec[nl], dx_vec[nl],
-                          mesh_zlo, mesh_zhi);
+    get_mfab_mesh_bounds(*field_fabs[nl], problo_vec[nl], dx_vec[nl], mesh_zlo,
+                         mesh_zhi);
   }
 
   return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
@@ -138,14 +137,13 @@ int interp_to_mfab::get_local_height_indices(
   amrex::Real mesh_zhi = -1. * std::numeric_limits<double>::infinity();
 
   // This function works on a single mfab
-  local_height_mfab_ops(hvec, mfab, problo, dx, mesh_zlo, mesh_zhi);
+  get_mfab_mesh_bounds(mfab, problo, dx, mesh_zlo, mesh_zhi);
 
   return local_height_vec_ops(indvec, hvec, mesh_zlo, mesh_zhi);
 }
 
-void interp_to_mfab::local_height_mfab_ops(
-    amrex::Vector<amrex::Real> hvec, amrex::MultiFab &mfab,
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+void interp_to_mfab::get_mfab_mesh_bounds(
+    amrex::MultiFab &mfab, amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx, amrex::Real &mesh_zlo,
     amrex::Real &mesh_zhi, int idim) {
   for (amrex::MFIter mfi(mfab); mfi.isValid(); ++mfi) {
@@ -202,6 +200,115 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
   }
 
   return 0;
+}
+
+int interp_to_mfab::check_lateral_overlap(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::Geometry> geom, bool is_hi) {
+
+  // Bounds of local AMR mesh
+  amrex::Real mesh_lo = std::numeric_limits<double>::infinity();
+  amrex::Real mesh_hi = -1. * std::numeric_limits<double>::infinity();
+
+  // Assume no overlap
+  int flag = 1;
+  // Number of levels
+  const int nlevels = field_fabs.size();
+  // Loop through levels and mfabs and get max/min bounds
+  for (int nl = 0; nl < nlevels; ++nl) {
+    auto problo = geom[nl].ProbLoArray();
+    auto probhi = geom[nl].ProbHiArray();
+    auto dx = geom[nl].CellSizeArray();
+    // Bounds of region to check
+    amrex::Real region_lo = problo[idim];
+    amrex::Real region_hi = probhi[idim];
+    // Depending on flag, distance is from hi or from lo
+    if (is_hi) {
+      region_lo = region_hi - dist;
+    } else {
+      region_hi = region_lo + dist;
+    }
+    // Get actual local mesh bounds
+    get_mfab_mesh_bounds(*field_fabs[nl], problo, dx, mesh_lo, mesh_hi, idim);
+    // Compare mesh bounds to region bounds
+    if (region_lo < mesh_hi && region_hi > mesh_lo) {
+      // Overlap exists
+      flag = 0;
+    }
+  }
+
+  return flag;
+}
+
+int interp_to_mfab::check_lateral_overlap_lo(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::Geometry> geom) {
+  return check_lateral_overlap(dist, idim, field_fabs, geom, false);
+}
+
+int interp_to_mfab::check_lateral_overlap_hi(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::Geometry> geom) {
+  return check_lateral_overlap(dist, idim, field_fabs, geom, true);
+}
+
+int interp_to_mfab::check_lateral_overlap(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec,
+    bool is_hi) {
+
+  // Bounds of local AMR mesh
+  amrex::Real mesh_lo = std::numeric_limits<double>::infinity();
+  amrex::Real mesh_hi = -1. * std::numeric_limits<double>::infinity();
+
+  // Assume no overlap
+  int flag = 0;
+  // Number of levels
+  const int nlevels = field_fabs.size();
+  // Loop through levels and mfabs and get max/min bounds
+  for (int nl = 0; nl < nlevels; ++nl) {
+    auto problo = problo_vec[nl];
+    auto probhi = probhi_vec[nl];
+    auto dx = dx_vec[nl];
+    // Bounds of region to check
+    amrex::Real region_lo = problo[idim];
+    amrex::Real region_hi = probhi[idim];
+    // Depending on flag, distance is from hi or from lo
+    if (is_hi) {
+      region_lo = region_hi - dist;
+    } else {
+      region_hi = region_lo + dist;
+    }
+    // Get actual local mesh bounds
+    get_mfab_mesh_bounds(*field_fabs[nl], problo, dx, mesh_lo, mesh_hi, idim);
+    // Compare mesh bounds to region bounds
+    if (region_lo < mesh_hi && region_hi > mesh_lo) {
+      // Overlap exists
+      flag = 1;
+    }
+  }
+
+  return flag;
+}
+
+int interp_to_mfab::check_lateral_overlap_lo(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
+  return check_lateral_overlap(dist, idim, field_fabs, problo_vec, probhi_vec,
+                               dx_vec, false);
+}
+
+int interp_to_mfab::check_lateral_overlap_hi(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec) {
+  return check_lateral_overlap(dist, idim, field_fabs, problo_vec, probhi_vec,
+                               dx_vec, true);
 }
 
 // Loop through and populate the multifab with levelset data, calculated by
