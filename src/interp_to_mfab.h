@@ -25,16 +25,46 @@ int get_local_height_indices(
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx);
 
 // This library assumes height is in z (index of 2)
-void local_height_mfab_ops(amrex::Vector<amrex::Real> hvec,
-                           amrex::MultiFab &mfab,
-                           amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
-                           amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx,
-                           amrex::Real &mesh_zlo, amrex::Real &mesh_zhi,
-                           int idim = 2);
+void get_mfab_mesh_bounds(amrex::MultiFab &mfab,
+                          amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo,
+                          amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx,
+                          amrex::Real &mesh_zlo, amrex::Real &mesh_zhi,
+                          int idim = 2);
 
 int local_height_vec_ops(amrex::Vector<int> &indvec,
                          amrex::Vector<amrex::Real> hvec, amrex::Real &mesh_zlo,
                          amrex::Real &mesh_zhi);
+
+int check_lateral_overlap(amrex::Real dist, int idim,
+                          amrex::Vector<amrex::MultiFab *> field_fabs,
+                          amrex::Vector<amrex::Geometry> geom, bool is_hi);
+
+int check_lateral_overlap_lo(amrex::Real dist, int idim,
+                             amrex::Vector<amrex::MultiFab *> field_fabs,
+                             amrex::Vector<amrex::Geometry> geom);
+
+int check_lateral_overlap_hi(amrex::Real dist, int idim,
+                             amrex::Vector<amrex::MultiFab *> field_fabs,
+                             amrex::Vector<amrex::Geometry> geom);
+
+int check_lateral_overlap(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec,
+    bool is_hi);
+
+int check_lateral_overlap_lo(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
+
+int check_lateral_overlap_hi(
+    amrex::Real dist, int idim, amrex::Vector<amrex::MultiFab *> field_fabs,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi_vec,
+    amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx_vec);
 
 void interp_eta_to_levelset_field(const int spd_nx, const int spd_ny,
                                   const amrex::Real spd_dx,
