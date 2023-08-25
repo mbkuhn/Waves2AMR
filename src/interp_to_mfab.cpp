@@ -480,7 +480,7 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
         ++i0;
         x0 = spd_dx * i0;
       }
-      while (i0 > 0 && x0 > xc || i0 >= spd_nx) {
+      while ((i0 > 0 && x0 > xc) || i0 >= spd_nx) {
         --i0;
         x0 = spd_dx * i0;
       }
@@ -488,7 +488,7 @@ void interp_to_mfab::interp_eta_to_levelset_multifab(
         ++j0;
         y0 = spd_dy * j0;
       }
-      while (j0 > 0 && y0 > yc || j0 >= spd_ny) {
+      while ((j0 > 0 && y0 > yc) || j0 >= spd_ny) {
         --j0;
         y0 = spd_dy * j0;
       }
@@ -579,7 +579,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         ++i0;
         x0 = spd_dx * i0;
       }
-      while (i0 > 0 && x0 > xc || i0 >= spd_nx) {
+      while ((i0 > 0 && x0 > xc) || i0 >= spd_nx) {
         --i0;
         x0 = spd_dx * i0;
       }
@@ -587,7 +587,7 @@ void interp_to_mfab::interp_velocity_to_multifab(
         ++j0;
         y0 = spd_dy * j0;
       }
-      while (j0 > 0 && y0 > yc || j0 >= spd_ny) {
+      while ((j0 > 0 && y0 > yc) || j0 >= spd_ny) {
         --j0;
         y0 = spd_dy * j0;
       }
