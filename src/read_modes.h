@@ -21,6 +21,8 @@ public:
 
   void read_data(double time);
 
+  void read_data(int itime);
+
   void output_data(std::vector<std::complex<double>> &v1,
                    std::vector<std::complex<double>> &v2,
                    std::vector<std::complex<double>> &v3,
@@ -29,6 +31,13 @@ public:
                    std::vector<std::complex<double>> &v6);
 
   void get_data(double time, std::vector<std::complex<double>> &mX,
+                std::vector<std::complex<double>> &mY,
+                std::vector<std::complex<double>> &mZ,
+                std::vector<std::complex<double>> &mT,
+                std::vector<std::complex<double>> &mFS,
+                std::vector<std::complex<double>> &mFST);
+
+  void get_data(int itime, std::vector<std::complex<double>> &mX,
                 std::vector<std::complex<double>> &mY,
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mT,
@@ -45,10 +54,16 @@ public:
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mFS);
 
+  void get_data(int itime, std::vector<std::complex<double>> &mX,
+                std::vector<std::complex<double>> &mY,
+                std::vector<std::complex<double>> &mZ,
+                std::vector<std::complex<double>> &mFS);
+
   // Calculate size of data for each mode variable (# of complex values)
   int get_vector_size() { return vec_size; }
 
   // Convert time to timestep
+  int time2step(const double time, const int itime_guess);
   int time2step(const double time);
 
   // Convert dimensions for fortran reading

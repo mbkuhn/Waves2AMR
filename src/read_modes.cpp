@@ -86,23 +86,31 @@ void ReadModes::initialize(std::string filename, bool allmodes) {
   dimensionalize();
 }
 
+// Version that uses stored index as guess and increments it
 int ReadModes::time2step(const double time) {
+  itime_now = time2step(time, itime_now);
+  return itime_now;
+}
+
+int ReadModes::time2step(const double time, const int itime_guess) {
   // Return -1 if time is negative
   if (time < 0.0)
     return -1;
+  // Begin with guess
+  int itime = itime_guess;
   // Look for same time or after
   bool done = false;
   while (!done) {
     // Use a tolerance to avoid skipping close matches
-    if (itime_now * dt_out < (time - dt_out * 1e-8)) {
-      ++itime_now;
-    } else if ((itime_now - 1) * dt_out > time) {
-      --itime_now;
+    if (itime * dt_out < (time - dt_out * 1e-8)) {
+      ++itime;
+    } else if ((itime - 1) * dt_out > time) {
+      --itime;
     } else {
       done = true;
     }
   }
-  return itime_now;
+  return itime;
 }
 
 void ReadModes::dimensionalize() {
@@ -118,6 +126,10 @@ void ReadModes::dimensionalize() {
 
 void ReadModes::read_data(double time) {
   int itime = time2step(time);
+  read_data(itime);
+}
+
+void ReadModes::read_data(int itime) {
   // Read (TODO: according to file type)
   ascii_read(itime);
 }
@@ -160,12 +172,34 @@ void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
   output_data(mX, mY, mZ, mT, mFS, mFST);
 }
 
+void ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
+                         std::vector<std::complex<double>> &mY,
+                         std::vector<std::complex<double>> &mZ,
+                         std::vector<std::complex<double>> &mT,
+                         std::vector<std::complex<double>> &mFS,
+                         std::vector<std::complex<double>> &mFST) {
+  // Read data
+  read_data(itime);
+  // Copy data to output
+  output_data(mX, mY, mZ, mT, mFS, mFST);
+}
+
 void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
                          std::vector<std::complex<double>> &mY,
                          std::vector<std::complex<double>> &mZ,
                          std::vector<std::complex<double>> &mFS) {
   // Read data
   read_data(time);
+  // Copy data to output
+  output_data(mX, mY, mZ, mFS);
+}
+
+void ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
+                         std::vector<std::complex<double>> &mY,
+                         std::vector<std::complex<double>> &mZ,
+                         std::vector<std::complex<double>> &mFS) {
+  // Read data
+  read_data(itime);
   // Copy data to output
   output_data(mX, mY, mZ, mFS);
 }
