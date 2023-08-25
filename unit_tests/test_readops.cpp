@@ -32,6 +32,7 @@ TEST_F(ReadOpsTest, Dimensionalize) {
 TEST_F(ReadOpsTest, Timestep) {
   ReadModes rmodes(dt_out_, T_stop_, xlen_, ylen_, depth_, g_, L_, T_);
   double dt = dt_out_ * T_;
+  EXPECT_NEAR(dt, rmodes.get_dtout(), 1e-12);
 
   int itime = rmodes.time2step(0.0);
   EXPECT_EQ(itime, 0);
@@ -47,6 +48,13 @@ TEST_F(ReadOpsTest, Timestep) {
 
   itime = rmodes.time2step((10.0 + 1e-8) * dt);
   EXPECT_EQ(itime, 10);
+
+  // Tests for how it would be used in AMR-Wind
+  itime = rmodes.time2step(dt, 1);
+  EXPECT_EQ(itime, 1);
+
+  itime = rmodes.time2step(1.1 * dt, 1);
+  EXPECT_EQ(itime, 1 + 1);
 }
 
 } // namespace w2a_tests

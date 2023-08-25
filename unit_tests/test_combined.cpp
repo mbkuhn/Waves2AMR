@@ -134,7 +134,7 @@ TEST_F(CombinedTest, ReadFFTDim) {
   std::vector<std::complex<double>> mFS(vsize, 0.0);
 
   // Populate mode data
-  rmodes.get_data(0.0, mX, mY, mZ, mFS);
+  rmodes.get_data(0, mX, mY, mZ, mFS);
   // Get dimensions
   int n0 = rmodes.get_first_dimension();
   int n1 = rmodes.get_second_dimension();
