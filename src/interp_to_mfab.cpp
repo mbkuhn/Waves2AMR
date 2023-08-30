@@ -214,7 +214,7 @@ int interp_to_mfab::check_lateral_overlap(
   amrex::Real mesh_hi = -1. * std::numeric_limits<double>::infinity();
 
   // Assume no overlap
-  int flag = 1;
+  int flag = 0;
   // Number of levels
   const int nlevels = field_fabs.size();
   // Loop through levels and mfabs and get max/min bounds
@@ -236,7 +236,7 @@ int interp_to_mfab::check_lateral_overlap(
     // Compare mesh bounds to region bounds
     if (region_lo < mesh_hi && region_hi > mesh_lo) {
       // Overlap exists
-      flag = 0;
+      flag = 1;
     }
   }
 
