@@ -97,8 +97,7 @@ void modes_hosgrid::dimensionalize_eta(
   auto *eta_ptr = HOS_eta.data();
   // Get size of eta for loop
   const int n2D = HOS_eta.size();
-  // Multiply each component of velocity vectors in given range of indices to
-  // dimensionalize the velocity
+  // Multiply each eta vector in given range of indices to dimensionalize eta
   amrex::ParallelFor(n2D, [=] AMREX_GPU_DEVICE(int n) { eta_ptr[n] *= dimL; });
 }
 
@@ -140,16 +139,11 @@ void modes_hosgrid::populate_hos_vel(
     amrex::Gpu::DeviceVector<amrex::Real> &HOS_w, int indv_start) {
 
   // Get nondimensional velocities
-  populate_hos_vel_nondim(
-      rm_obj.get_first_dimension(), rm_obj.get_second_dimension(),
-      rm_obj.get_nondim_xlen(), rm_obj.get_nondim_ylen(),
-      rm_obj.get_nondim_depth(), z / rm_obj.get_L(), mX_vector, mY_vector,
-      mZ_vector, p, x_modes, y_modes, z_modes, HOS_u, HOS_v, HOS_w, indv_start);
-
-  // Dimensionalize velocities
-  dimensionalize_vel(rm_obj.get_first_dimension(),
-                     rm_obj.get_second_dimension(), rm_obj.get_L(),
-                     rm_obj.get_T(), HOS_u, HOS_v, HOS_w, indv_start);
+  populate_hos_vel(rm_obj.get_first_dimension(), rm_obj.get_second_dimension(),
+                   rm_obj.get_xlen(), rm_obj.get_ylen(), rm_obj.get_depth(), z,
+                   rm_obj.get_L(), rm_obj.get_T(), mX_vector, mY_vector,
+                   mZ_vector, p, x_modes, y_modes, z_modes, HOS_u, HOS_v, HOS_w,
+                   indv_start);
 }
 
 void modes_hosgrid::populate_hos_vel_nondim(
