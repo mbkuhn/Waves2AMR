@@ -154,17 +154,26 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   amrex::Vector<amrex::MultiFab *> field_fabs{&mf0, &mf1};
 
   // Make vectors of GpuArrays for geometry information
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{0.1, 0.1, 0.1};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev1{0.05, 0.05, 0.05};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev0,
-                                                                 dx_lev1};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -1.};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
-      problo_all, problo_all};
+  // Physical bounds of domain
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_dom{0., 0., -1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> probhi_dom{1.6, 1.6, 0.6};
+  amrex::RealBox rbox(problo_dom.data(), probhi_dom.data());
+  // Domain boxes for each level
+  int nxd0 = 16;
+  int nxd1 = 2 * nxd0;
+  amrex::Box domainbox0(amrex::IntVect{0, 0, 0},
+                        amrex::IntVect{nxd0 - 1, nxd0 - 1, nxd0 - 1});
+  amrex::Box domainbox1(amrex::IntVect{0, 0, 0},
+                        amrex::IntVect{nxd1 - 1, nxd1 - 1, nxd1 - 1});
+  // Geometry objects for each level
+  amrex::Geometry geom0(domainbox0, &rbox);
+  amrex::Geometry geom1(domainbox1, &rbox);
+  // Geometry vector
+  amrex::Vector<amrex::Geometry> geom_all{geom0, geom1};
 
   // Call function being tested
   int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
-                                                      problo, dx);
+                                                      geom_all);
 
   // Check results
   int indsize = indvec.size();
@@ -172,6 +181,15 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
   for (int n = 0; n < 5; ++n) {
     EXPECT_EQ(n, indvec[n]);
   }
+
+  // Set up arrays for later tests, easier to modify
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{0.1, 0.1, 0.1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev1{0.05, 0.05, 0.05};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev0,
+                                                                 dx_lev1};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -1.};
+  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
+      problo_all, problo_all};
 
   // Test scenario with partial overlap
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_po{0., 0., -0.3};
@@ -217,19 +235,22 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
 }
 
 TEST_F(InterpToMFabTest, check_lateral_overlap) {
-  // Make vectors of GpuArrays for geometry information
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev0{1. / 32., 1. / 32.,
-                                                       1. / 32.};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev1{1. / 64., 1. / 64.,
-                                                       1. / 64.};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev0,
-                                                                 dx_lev1};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -0.5};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
-      problo_all, problo_all};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> probhi_all{1., 1., 0.5};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> probhi{
-      probhi_all, probhi_all};
+  // Physical bounds of domain
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo{0., 0., -0.5};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> probhi{1., 1., 0.5};
+  amrex::RealBox rbox(problo.data(), probhi.data());
+  // Domain boxes for each level
+  int nxd0 = 32;
+  int nxd1 = 2 * nxd0;
+  amrex::Box domainbox0(amrex::IntVect{0, 0, 0},
+                        amrex::IntVect{nxd0 - 1, nxd0 - 1, nxd0 - 1});
+  amrex::Box domainbox1(amrex::IntVect{0, 0, 0},
+                        amrex::IntVect{nxd1 - 1, nxd1 - 1, nxd1 - 1});
+  // Geometry objects for each level
+  amrex::Geometry geom0(domainbox0, &rbox);
+  amrex::Geometry geom1(domainbox1, &rbox);
+  // Geometry vector
+  amrex::Vector<amrex::Geometry> geom_all{geom0, geom1};
 
   // Make vector of const multifabs (like an AMR-Wind field)
   const int nz = 8;
@@ -267,42 +288,42 @@ TEST_F(InterpToMFabTest, check_lateral_overlap) {
   // More precise checks are to ensure use of cell-centered locations
 
   // Checks with lo mfabs
-  int flag = interp_to_mfab::check_lateral_overlap_hi(
-      21. / 32. + 1e-8, 0, field_fabs_lo, problo, probhi, dx);
+  int flag = interp_to_mfab::check_lateral_overlap_hi(21. / 32. + 1e-8, 0,
+                                                      field_fabs_lo, geom_all);
   EXPECT_EQ(flag, 0);
-  flag = interp_to_mfab::check_lateral_overlap_hi(
-      21.5 / 32. + 1e-8, 0, field_fabs_lo, problo, probhi, dx);
+  flag = interp_to_mfab::check_lateral_overlap_hi(21.5 / 32. + 1e-8, 0,
+                                                  field_fabs_lo, geom_all);
   EXPECT_EQ(flag, 1);
-  flag = interp_to_mfab::check_lateral_overlap_lo(0.1, 0, field_fabs_lo, problo,
-                                                  probhi, dx);
+  flag =
+      interp_to_mfab::check_lateral_overlap_lo(0.1, 0, field_fabs_lo, geom_all);
   EXPECT_EQ(flag, 1);
 
   // Checks with hi mfabs
-  flag = interp_to_mfab::check_lateral_overlap_hi(0.1, 0, field_fabs_hi, problo,
-                                                  probhi, dx);
+  flag =
+      interp_to_mfab::check_lateral_overlap_hi(0.1, 0, field_fabs_hi, geom_all);
   EXPECT_EQ(flag, 1);
-  flag = interp_to_mfab::check_lateral_overlap_lo(
-      21. / 32. + 1e-8, 0, field_fabs_hi, problo, probhi, dx);
+  flag = interp_to_mfab::check_lateral_overlap_lo(21. / 32. + 1e-8, 0,
+                                                  field_fabs_hi, geom_all);
   EXPECT_EQ(flag, 0);
 
   // Checks with mid mfabs
   flag = interp_to_mfab::check_lateral_overlap_hi(0.1, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 0);
   flag = interp_to_mfab::check_lateral_overlap_lo(0.1, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 0);
   flag = interp_to_mfab::check_lateral_overlap_hi(0.3, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 1);
   flag = interp_to_mfab::check_lateral_overlap_lo(0.5, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 1);
   flag = interp_to_mfab::check_lateral_overlap_hi(0.9, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 1);
   flag = interp_to_mfab::check_lateral_overlap_lo(0.9, 0, field_fabs_mid,
-                                                  problo, probhi, dx);
+                                                  geom_all);
   EXPECT_EQ(flag, 1);
 }
 

@@ -53,30 +53,52 @@ int main(int argc, char *argv[]) {
     amrex::Abort("create_height_vector error, failure code " +
                  std::to_string(flag));
   }
+  // Create representation of entire AMR-Wind mesh
+  // Physical bounds of domain
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo{0., 0., -10.};
+  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> probhi{20., 20., 10.};
+  amrex::RealBox rbox(problo.data(), probhi.data());
+  // Domain boxes for each level
+  int nxg0 = 64;
+  int nyg0 = 64;
+  int nzg0 = 64;
+  amrex::Box domainbox0(amrex::IntVect{0, 0, 0},
+                        amrex::IntVect{nxg0 - 1, nyg0 - 1, nzg0 - 1});
+  amrex::Box domainbox1(
+      amrex::IntVect{0, 0, 0},
+      amrex::IntVect{2 * nxg0 - 1, 2 * nyg0 - 1, 2 * nzg0 - 1});
+  // Geometry objects for each level
+  amrex::Geometry geom0(domainbox0, &rbox);
+  amrex::Geometry geom1(domainbox1, &rbox);
+  // Geometry vector
+  amrex::Vector<amrex::Geometry> geom_all{geom0, geom1};
+
   // Create vector of multifab to represent part of AMR-Wind mesh
-  int nz = 8;
-  amrex::BoxArray ba(amrex::Box(amrex::IntVect{0, 0, 12 * nz},
-                                amrex::IntVect{nz - 1, nz - 1, 13 * nz - 1}));
-  amrex::DistributionMapping dm{ba};
+  // This part of the mesh is what current processor has access to
+  int nx_box = 8;
+  amrex::Box localbox0(amrex::IntVect{0, 0, 3 * nx_box},
+                       amrex::IntVect{nx_box - 1, nx_box - 1, 4 * nx_box - 1});
+  amrex::BoxArray ba0(localbox0);
+  amrex::DistributionMapping dm0{ba0};
+  amrex::Box localbox1(
+      amrex::IntVect{0, 0, 2 * 3 * nx_box},
+      amrex::IntVect{2 * nx_box - 1, 2 * nx_box - 1, 2 * 4 * nx_box - 1});
+  amrex::BoxArray ba1(localbox1);
+  amrex::DistributionMapping dm1{ba1};
   const int ncomp = 3;
   const int nghost = 3;
-  // Just do one level in this test
-  amrex::MultiFab mf_ls(ba, dm, 1, nghost);
-  amrex::MultiFab mf_v(ba, dm, ncomp, nghost);
-  amrex::Vector<amrex::MultiFab *> phi_field{&mf_ls};
-  amrex::Vector<amrex::MultiFab *> velocity_field{&mf_v};
-
-  // Make vectors of GpuArrays for geometry information
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dx_lev{0.1, 0.1, 0.1};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> dx{dx_lev};
-  amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_all{0., 0., -10.};
-  amrex::Vector<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>> problo{
-      problo_all};
+  // Create multifabs and vector version of fields
+  amrex::MultiFab mf_ls0(ba0, dm0, 1, nghost);
+  amrex::MultiFab mf_ls1(ba1, dm1, 1, nghost);
+  amrex::MultiFab mf_v0(ba0, dm0, ncomp, nghost);
+  amrex::MultiFab mf_v1(ba1, dm1, ncomp, nghost);
+  amrex::Vector<amrex::MultiFab *> phi_field{&mf_ls0, &mf_ls1};
+  amrex::Vector<amrex::MultiFab *> velocity_field{&mf_v0, &mf_v1};
 
   // Get indices of heights that overlap
   amrex::Vector<int> indvec;
   flag = interp_to_mfab::get_local_height_indices(indvec, hvec, velocity_field,
-                                                  problo, dx);
+                                                  geom_all);
   // Flag should indicate that there are overlapping points
   if (flag > 0) {
     amrex::Abort(
@@ -89,11 +111,13 @@ int main(int argc, char *argv[]) {
 
   // Loop through heights to check and print
   int n_hvec = 0;
-  int n_mfab = nz + nghost - 1;
+  int n_mfab = 2 * nx_box + nghost - 1;
   int n_ivec = 0;
   std::cout << std::endl << "Heights, descending order: \n";
-  for (int n = 0; n < nz + hvec.size(); ++n) {
-    const amrex::Real h_mfab = (problo[0])[2] + (dx[0])[2] * (12 * nz + n_mfab);
+  for (int n = 0; n < 2 * nx_box + 2 * nghost + hvec.size(); ++n) {
+    const auto ploz1 = geom1.ProbLo(2);
+    const auto dz1 = geom1.CellSize(2);
+    const amrex::Real h_mfab = ploz1 + dz1 * (2 * 3 * nx_box + n_mfab);
     if (hvec[n_hvec] > h_mfab || n_mfab < -nghost) {
       std::cout << "hvec " << n_hvec << " " << hvec[n_hvec];
       if (n_ivec < indvec.size() && indvec[n_ivec] == n_hvec) {
@@ -134,12 +158,11 @@ int main(int argc, char *argv[]) {
   const amrex::Real spd_dx = xlen / n0;
   const amrex::Real spd_dy = ylen / n1;
   const amrex::Real zero_sea_level = 0.0;
-  interp_to_mfab::interp_eta_to_levelset_field(n0, n1, spd_dx, spd_dy,
-                                               zero_sea_level, hos_eta_vec,
-                                               phi_field, problo, dx);
+  interp_to_mfab::interp_eta_to_levelset_field(
+      n0, n1, spd_dx, spd_dy, zero_sea_level, hos_eta_vec, phi_field, geom_all);
   interp_to_mfab::interp_velocity_to_field(n0, n1, spd_dx, spd_dy, indvec, hvec,
                                            hos_u_vec, hos_v_vec, hos_w_vec,
-                                           velocity_field, problo, dx);
+                                           velocity_field, geom_all);
 
   // Delete ptrs and plan
   delete[] eta_modes;
