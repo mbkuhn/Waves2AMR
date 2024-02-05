@@ -58,9 +58,9 @@ if (WAVES2AMR_GPU_BACKEND STREQUAL "CUDA")
    include(AMReXTargetHelpers)
 endif ()
 
-# FFTW library is required, but I need better sourcing
-set(fftw_lib ${CMAKE_CURRENT_SOURCE_DIR}/fftw/lib/libfftw3.a)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fftw/include/)
+# FFTW library is required
+include_directories(${FFTW_DIR}/include/)
+set(fftw_lib ${FFTW_DIR}/lib/libfftw3.a)
 
 #
 # Define the object library to compile
