@@ -19,21 +19,28 @@ void ReadModes::ascii_initialize() {
   f_out = 1.0 / dt_out;
 }
 
-void ReadModes::ascii_read(const int itime) {
+// Output is a flag where true = successful read, false = eof found
+bool ReadModes::ascii_read(const int itime) {
 
   if (modeT.size() == 0) {
-    ascii_read_brief(itime);
+    return ascii_read_brief(itime);
   } else {
-    ascii_read_full(itime);
+    return ascii_read_full(itime);
   }
 }
 
-void ReadModes::ascii_read_full(const int itime) {
+bool ReadModes::ascii_read_full(const int itime) {
+  bool eof_not_found = true;
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
   // Skip timesteps (each entry is complex (2) and 6 vars)
   is.ignore(18 * 6 * 2 * vec_size * (itime + 1));
+  // Check for eof, exit early if not found
+  eof_not_found = eof_not_found && !is.eof();
+  if (!eof_not_found) {
+    return eof_not_found;
+  }
   // Address edge case of itime = -1
   int i1_init = 0;
   if (itime == -1) {
@@ -42,6 +49,11 @@ void ReadModes::ascii_read_full(const int itime) {
     for (int i1 = 0; i1 < i1_init; ++i1) {
       modeX[i1].real(0.0);
       modeX[i1].imag(0.0);
+    }
+    // Check for eof, exit early if not found
+    eof_not_found = eof_not_found && !is.eof();
+    if (!eof_not_found) {
+      return eof_not_found;
     }
   }
   // Read modes
@@ -78,18 +90,38 @@ void ReadModes::ascii_read_full(const int itime) {
       is >> buf_r >> buf_i;
       modeFST[idx + i1].real(buf_r);
       modeFST[idx + i1].imag(buf_i);
+      if (i2 == n2 - 1 && i1 == n1o2p1 - 2) {
+        // Check on second-to-last read
+        eof_not_found = eof_not_found && !is.eof();
+      }
     }
     idx += n1o2p1;
     i1_init = 0;
+    // Check for eof, exit early if found
+    if (i2 < n2 - 1) {
+      // Do not check after very last read in case this is last step
+      eof_not_found = eof_not_found && !is.eof();
+    }
+    if (!eof_not_found) {
+      return eof_not_found;
+    }
   }
+  // Return eof_not_found value, should be true at this point
+  return eof_not_found;
 }
 
-void ReadModes::ascii_read_brief(const int itime) {
+bool ReadModes::ascii_read_brief(const int itime) {
+  bool eof_not_found = true;
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
   // Skip timesteps (each entry is complex (2) and 6 vars)
   is.ignore(18 * 6 * 2 * vec_size * (itime + 1));
+  // Check for eof, exit early if not found
+  eof_not_found = eof_not_found && !is.eof();
+  if (!eof_not_found) {
+    return eof_not_found;
+  }
   // Address edge case of itime = -1
   int i1_init = 0;
   if (itime == -1) {
@@ -98,6 +130,11 @@ void ReadModes::ascii_read_brief(const int itime) {
     for (int i1 = 0; i1 < i1_init; ++i1) {
       modeX[i1].real(0.0);
       modeX[i1].imag(0.0);
+    }
+    // Check for eof, exit early if not found
+    eof_not_found = eof_not_found && !is.eof();
+    if (!eof_not_found) {
+      return eof_not_found;
     }
   }
   // Read modes
@@ -132,8 +169,22 @@ void ReadModes::ascii_read_brief(const int itime) {
     for (int i1 = 0; i1 < n1o2p1; ++i1) {
       is >> buf_r >> buf_i;
       // Don't need T
+      if (i2 == n2 - 1 && i1 == n1o2p1 - 2) {
+        // Check on second-to-last read
+        eof_not_found = eof_not_found && !is.eof();
+      }
     }
     idx += n1o2p1;
     i1_init = 0;
+    // Check for eof, exit early if found
+    if (i2 < n2 - 1) {
+      // Do not check after very last read in case this is last step
+      eof_not_found = eof_not_found && !is.eof();
+    }
+    if (!eof_not_found) {
+      return eof_not_found;
+    }
   }
+  // Return eof_not_found value, should be true at this point
+  return eof_not_found;
 }
