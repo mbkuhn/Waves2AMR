@@ -164,6 +164,18 @@ int main(int argc, char *argv[]) {
                                            hos_u_vec, hos_v_vec, hos_w_vec,
                                            velocity_field, geom_all);
 
+  // Try to get next timestep (not available)
+  bool readflag = rmodes.get_data(2.0 * dt_out, mX, mY, mZ, mFS);
+  if (!readflag) {
+    amrex::Print() << "Data at time " << 2.0 * dt_out
+                   << " not available, looping back to initial time " << 0
+                   << ".\n";
+    readflag = rmodes.get_data(0.0, mX, mY, mZ, mFS);
+    if (readflag) {
+      amrex::Print() << "Data read at time " << 0 << " successful.\n";
+    }
+  }
+
   // Delete ptrs and plan
   delete[] eta_modes;
   delete[] u_modes;
