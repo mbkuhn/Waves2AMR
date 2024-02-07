@@ -76,6 +76,42 @@ std::array<double, 6> ModeSumBrief(double time, double initval) {
                                mFS_sum, mX_scndr, mX_scndi};
 }
 
+bool ModeFlag(double time, double initval) {
+  std::string fname = "../tests/modes_HOS_SWENSE.dat";
+  // Read and convert nondim quantities
+  ReadModes rmodes(fname, true);
+  // Initialize and size output variables
+  int vsize = rmodes.get_vector_size();
+  std::vector<std::complex<double>> mX(vsize, initval);
+  std::vector<std::complex<double>> mY(vsize, initval);
+  std::vector<std::complex<double>> mZ(vsize, initval);
+  std::vector<std::complex<double>> mT(vsize, initval);
+  std::vector<std::complex<double>> mFS(vsize, initval);
+  std::vector<std::complex<double>> mFST(vsize, initval);
+
+  // Try to read, get flag
+  auto flag = rmodes.get_data(time, mX, mY, mZ, mT, mFS, mFST);
+
+  return flag;
+}
+
+bool ModeFlagBrief(double time, double initval) {
+  std::string fname = "../tests/modes_HOS_SWENSE.dat";
+  // Read modes
+  ReadModes rmodes(fname, false);
+  // Initialize and size output variables
+  int vsize = rmodes.get_vector_size();
+  std::vector<std::complex<double>> mX(vsize, initval);
+  std::vector<std::complex<double>> mY(vsize, initval);
+  std::vector<std::complex<double>> mZ(vsize, initval);
+  std::vector<std::complex<double>> mFS(vsize, initval);
+
+  // Try to read, get flag
+  auto flag = rmodes.get_data(time, mX, mY, mZ, mFS);
+
+  return flag;
+}
+
 } // namespace
 
 class AsciiReadTest : public testing::Test {};
@@ -188,6 +224,36 @@ TEST_F(AsciiReadTest, Modes1) {
   EXPECT_GT(sums[5], 0.0);
   EXPECT_EQ(sums[6], 3.1760843980E-20);
   EXPECT_EQ(sums[7], 6.6965350771E-20);
+}
+
+TEST_F(AsciiReadTest, ModesEOF) {
+
+  // Try to read modes at init
+  auto flag0 = ModeFlag(0.0, -1.0);
+  // Try to read modes at next available time
+  auto flag1 = ModeFlag(100.0, -1.0);
+  // Try to read modes past available data
+  auto flag2 = ModeFlag(200.0, -1.0);
+  // Test for expected values
+  EXPECT_TRUE(flag0);
+  EXPECT_TRUE(flag1);
+  EXPECT_FALSE(flag2);
+  // True = successful read; False = EOF detected
+}
+
+TEST_F(AsciiReadTest, ModesBriefEOF) {
+
+  // Try to read modes at init
+  auto flag0 = ModeFlagBrief(0.0, -1.0);
+  // Try to read modes at next available time
+  auto flag1 = ModeFlagBrief(100.0, -1.0);
+  // Try to read modes past available data
+  auto flag2 = ModeFlagBrief(200.0, -1.0);
+  // Test for expected values
+  EXPECT_TRUE(flag0);
+  EXPECT_TRUE(flag1);
+  EXPECT_FALSE(flag2);
+  // True = successful read; False = EOF detected
 }
 
 } // namespace w2a_test
