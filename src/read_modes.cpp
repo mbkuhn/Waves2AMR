@@ -124,14 +124,14 @@ void ReadModes::dimensionalize() {
   g *= L / T / T;
 }
 
-void ReadModes::read_data(double time) {
+bool ReadModes::read_data(double time) {
   int itime = time2step(time);
-  read_data(itime);
+  return read_data(itime);
 }
 
-void ReadModes::read_data(int itime) {
+bool ReadModes::read_data(int itime) {
   // Read (TODO: according to file type)
-  ascii_read(itime);
+  return ascii_read(itime);
 }
 
 void ReadModes::output_data(std::vector<std::complex<double>> &v1,
@@ -160,48 +160,56 @@ void ReadModes::output_data(std::vector<std::complex<double>> &v1,
   std::copy(modeFS.begin(), modeFS.end(), v4.begin());
 }
 
-void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
+bool ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
                          std::vector<std::complex<double>> &mY,
                          std::vector<std::complex<double>> &mZ,
                          std::vector<std::complex<double>> &mT,
                          std::vector<std::complex<double>> &mFS,
                          std::vector<std::complex<double>> &mFST) {
   // Read data
-  read_data(time);
+  auto flag = read_data(time);
   // Copy data to output
   output_data(mX, mY, mZ, mT, mFS, mFST);
+  // Pass read flag (for detecting EOF)
+  return flag;
 }
 
-void ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
+bool ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
                          std::vector<std::complex<double>> &mY,
                          std::vector<std::complex<double>> &mZ,
                          std::vector<std::complex<double>> &mT,
                          std::vector<std::complex<double>> &mFS,
                          std::vector<std::complex<double>> &mFST) {
   // Read data
-  read_data(itime);
+  auto flag = read_data(itime);
   // Copy data to output
   output_data(mX, mY, mZ, mT, mFS, mFST);
+  // Pass read flag (for detecting EOF)
+  return flag;
 }
 
-void ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
+bool ReadModes::get_data(double time, std::vector<std::complex<double>> &mX,
                          std::vector<std::complex<double>> &mY,
                          std::vector<std::complex<double>> &mZ,
                          std::vector<std::complex<double>> &mFS) {
   // Read data
-  read_data(time);
+  auto flag = read_data(time);
   // Copy data to output
   output_data(mX, mY, mZ, mFS);
+  // Pass read flag (for detecting EOF)
+  return flag;
 }
 
-void ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
+bool ReadModes::get_data(int itime, std::vector<std::complex<double>> &mX,
                          std::vector<std::complex<double>> &mY,
                          std::vector<std::complex<double>> &mZ,
                          std::vector<std::complex<double>> &mFS) {
   // Read data
-  read_data(itime);
+  auto flag = read_data(itime);
   // Copy data to output
   output_data(mX, mY, mZ, mFS);
+  // Pass read flag (for detecting EOF)
+  return flag;
 }
 
 void ReadModes::print_file_constants() {

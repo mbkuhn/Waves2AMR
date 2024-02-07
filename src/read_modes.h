@@ -19,9 +19,9 @@ public:
 
   void print_file_constants();
 
-  void read_data(double time);
+  bool read_data(double time);
 
-  void read_data(int itime);
+  bool read_data(int itime);
 
   void output_data(std::vector<std::complex<double>> &v1,
                    std::vector<std::complex<double>> &v2,
@@ -30,14 +30,14 @@ public:
                    std::vector<std::complex<double>> &v5,
                    std::vector<std::complex<double>> &v6);
 
-  void get_data(double time, std::vector<std::complex<double>> &mX,
+  bool get_data(double time, std::vector<std::complex<double>> &mX,
                 std::vector<std::complex<double>> &mY,
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mT,
                 std::vector<std::complex<double>> &mFS,
                 std::vector<std::complex<double>> &mFST);
 
-  void get_data(int itime, std::vector<std::complex<double>> &mX,
+  bool get_data(int itime, std::vector<std::complex<double>> &mX,
                 std::vector<std::complex<double>> &mY,
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mT,
@@ -49,12 +49,12 @@ public:
                    std::vector<std::complex<double>> &v3,
                    std::vector<std::complex<double>> &v4);
 
-  void get_data(double time, std::vector<std::complex<double>> &mX,
+  bool get_data(double time, std::vector<std::complex<double>> &mX,
                 std::vector<std::complex<double>> &mY,
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mFS);
 
-  void get_data(int itime, std::vector<std::complex<double>> &mX,
+  bool get_data(int itime, std::vector<std::complex<double>> &mX,
                 std::vector<std::complex<double>> &mY,
                 std::vector<std::complex<double>> &mZ,
                 std::vector<std::complex<double>> &mFS);
@@ -96,9 +96,9 @@ public:
 private:
   // ASCII functions
   void ascii_initialize();
-  void ascii_read(const int itime);
-  void ascii_read_full(const int itime);
-  void ascii_read_brief(const int itime);
+  bool ascii_read(const int itime);
+  bool ascii_read_full(const int itime);
+  bool ascii_read_brief(const int itime);
 
   // Dimensionalize read-in quantities
   void dimensionalize();
