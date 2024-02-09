@@ -187,7 +187,7 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
 
   // If there are no overlapping points
   if (itop + ibtm < 0) {
-    return 1;
+    return 0;
   }
 
   // Expand indices to surround mfab points if possible
@@ -202,7 +202,8 @@ int interp_to_mfab::local_height_vec_ops(amrex::Vector<int> &indvec,
     indvec[i] = itop + i;
   }
 
-  return 0;
+  // Means that index vector has valid points, can be used
+  return 1;
 }
 
 int interp_to_mfab::check_lateral_overlap(
