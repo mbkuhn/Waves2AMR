@@ -213,7 +213,7 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
                                                   problo, dx);
   indsize = indvec_no.size();
   EXPECT_EQ(indsize, 0);
-  EXPECT_EQ(flag, 1);
+  EXPECT_EQ(flag, 0);
 
   // Test scenario where mfab is between points, but no points are in mfab
   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> problo_wi{0., 0., -0.8};
@@ -228,7 +228,7 @@ TEST_F(InterpToMFabTest, get_local_height_indices) {
                                                   problo, dx);
   indsize = indvec_wi.size();
   EXPECT_EQ(indsize, 2);
-  EXPECT_EQ(flag, 0);
+  EXPECT_EQ(flag, 1);
   for (int n = 0; n < indsize; ++n) {
     EXPECT_EQ(n + 3, indvec_wi[n]);
   }
@@ -416,7 +416,7 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab) {
   amrex::Vector<int> indvec;
   int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
                                                       problo, dx);
-  EXPECT_EQ(flag, 0);
+  EXPECT_EQ(flag, 1);
   // Perform interpolation
   interp_to_mfab::interp_velocity_to_field(spd_nx, spd_ny, spd_dx, spd_dy,
                                            indvec, hvec, uvec, vvec, wvec,
@@ -557,7 +557,7 @@ TEST_F(InterpToMFabTest, interp_velocity_to_multifab_lateral) {
   amrex::Vector<int> indvec;
   int flag = interp_to_mfab::get_local_height_indices(indvec, hvec, field_fabs,
                                                       problo, dx);
-  EXPECT_EQ(flag, 0);
+  EXPECT_EQ(flag, 1);
 
   // Perform interpolation
   interp_to_mfab::interp_velocity_to_field(spd_nx, spd_ny, spd_dx, spd_dy,

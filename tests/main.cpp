@@ -99,8 +99,8 @@ int main(int argc, char *argv[]) {
   amrex::Vector<int> indvec;
   flag = interp_to_mfab::get_local_height_indices(indvec, hvec, velocity_field,
                                                   geom_all);
-  // Flag should indicate that there are overlapping points
-  if (flag > 0) {
+  // Flag = 0 indicates that there are no overlapping points
+  if (flag == 0) {
     amrex::Abort(
         "get_local_height_indices: no valid points between MF and hvec");
   }
