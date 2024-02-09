@@ -90,18 +90,11 @@ bool ReadModes::ascii_read_full(const int itime) {
       is >> buf_r >> buf_i;
       modeFST[idx + i1].real(buf_r);
       modeFST[idx + i1].imag(buf_i);
-      if (i2 == n2 - 1 && i1 == n1o2p1 - 2) {
-        // Check on second-to-last read
-        eof_not_found = eof_not_found && !is.eof();
-      }
     }
     idx += n1o2p1;
     i1_init = 0;
     // Check for eof, exit early if found
-    if (i2 < n2 - 1) {
-      // Do not check after very last read in case this is last step
-      eof_not_found = eof_not_found && !is.eof();
-    }
+    eof_not_found = eof_not_found && !is.eof();
     if (!eof_not_found) {
       return eof_not_found;
     }
@@ -169,18 +162,11 @@ bool ReadModes::ascii_read_brief(const int itime) {
     for (int i1 = 0; i1 < n1o2p1; ++i1) {
       is >> buf_r >> buf_i;
       // Don't need T
-      if (i2 == n2 - 1 && i1 == n1o2p1 - 2) {
-        // Check on second-to-last read
-        eof_not_found = eof_not_found && !is.eof();
-      }
     }
     idx += n1o2p1;
     i1_init = 0;
     // Check for eof, exit early if found
-    if (i2 < n2 - 1) {
-      // Do not check after very last read in case this is last step
-      eof_not_found = eof_not_found && !is.eof();
-    }
+    eof_not_found = eof_not_found && !is.eof();
     if (!eof_not_found) {
       return eof_not_found;
     }
