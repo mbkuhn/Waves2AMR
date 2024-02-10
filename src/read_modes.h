@@ -15,7 +15,7 @@ public:
 
   ReadModes();
 
-  void initialize(std::string, bool allmodes = false);
+  bool initialize(std::string, bool allmodes = false);
 
   void print_file_constants();
 
@@ -95,7 +95,7 @@ public:
 
 private:
   // ASCII functions
-  void ascii_initialize();
+  bool ascii_initialize();
   bool ascii_read(const int itime);
   bool ascii_read_full(const int itime);
   bool ascii_read_brief(const int itime);

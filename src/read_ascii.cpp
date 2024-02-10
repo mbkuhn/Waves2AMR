@@ -1,10 +1,15 @@
 #include "read_modes.h"
 #include <iterator>
 
-void ReadModes::ascii_initialize() {
+bool ReadModes::ascii_initialize() {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
+
+  bool file_exists = is.good();
+  if (!file_exists) {
+    return file_exists;
+  }
 
   double d_n1, d_n2;
   is >> d_n1 >> d_n2 >> dt_out >> T_stop >> xlen >> ylen >> depth >> g >> L >>
@@ -17,6 +22,8 @@ void ReadModes::ascii_initialize() {
   n1 = (int)d_n1;
   n2 = (int)d_n2;
   f_out = 1.0 / dt_out;
+
+  return file_exists;
 }
 
 // Output is a flag where true = successful read, false = eof found

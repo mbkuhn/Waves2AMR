@@ -7,7 +7,12 @@ ReadModes::ReadModes(std::string filename, bool allmodes)
   // TODO: Determine filetype
 
   // Initialize (TODO: according to file type)
-  ascii_initialize();
+  bool file_exists = ascii_initialize();
+  if (!file_exists) {
+    std::cout << "ABORT: ReadModes is initializing with a file, but the "
+                 "specified file does not exist.\n";
+    std::exit(1);
+  }
 
   // Get working dimensions
   n1o2p1 = n1 / 2 + 1;
@@ -48,7 +53,7 @@ ReadModes::ReadModes(double dt_out_, double T_stop_, double xlen_, double ylen_,
 // Do-nothing constructor, initializer must be called later
 ReadModes::ReadModes() : is_init(false) {}
 
-void ReadModes::initialize(std::string filename, bool allmodes) {
+bool ReadModes::initialize(std::string filename, bool allmodes) {
   // Check if already initialized
   if (is_init) {
     std::cout << "ABORT: ReadModes has already been initialized, but "
@@ -63,7 +68,10 @@ void ReadModes::initialize(std::string filename, bool allmodes) {
   // TODO: Determine filetype
 
   // Initialize (TODO: according to file type)
-  ascii_initialize();
+  bool file_exists = ascii_initialize();
+  if (!file_exists) {
+    return file_exists;
+  }
 
   // Get working dimensions
   n1o2p1 = n1 / 2 + 1;
@@ -84,6 +92,8 @@ void ReadModes::initialize(std::string filename, bool allmodes) {
 
   // Dimensionalize all nondim scalar quantities
   dimensionalize();
+
+  return file_exists;
 }
 
 // Version that uses stored index as guess and increments it
