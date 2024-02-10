@@ -185,6 +185,22 @@ TEST_F(AsciiReadTest, InitializeFail) {
   EXPECT_DEATH(rmodes.initialize(fname);, "");
 }
 
+TEST_F(AsciiReadTest, InitializeNoFile1) {
+  std::string fname = "../tests/modes_HOS_SWENSE_missing.dat";
+
+  // Initialize with file that does not exist
+  EXPECT_DEATH(ReadModes rmodes(fname);, "");
+}
+
+TEST_F(AsciiReadTest, InitializeNoFile2) {
+  std::string fname = "../tests/modes_HOS_SWENSE_missing.dat";
+
+  // Initialize with file that does not exist
+  ReadModes rmodes;
+
+  EXPECT_FALSE(rmodes.initialize(fname));
+}
+
 TEST_F(AsciiReadTest, ModesInit) {
 
   // Get mode sums written at initialization, which are placeholders
