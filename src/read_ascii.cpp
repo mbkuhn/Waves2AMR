@@ -41,8 +41,11 @@ bool ReadModes::ascii_read_full(const int itime) {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
-  // Skip timesteps (each entry is complex (2) and 6 vars)
-  is.ignore(18 * 6 * 2 * vec_size * (itime + 1));
+  // Skip previous timesteps
+  // -- each entry is complex (2) and 6 vars
+  // -- each number takes 18 spaces
+  // -- long long is to avoid overflow
+  is.ignore(18 * 6 * 2 * (long long)(vec_size * (itime + 1)));
   // Check for eof, exit early if not found
   eof_not_found = eof_not_found && !is.eof();
   if (!eof_not_found) {
@@ -115,8 +118,11 @@ bool ReadModes::ascii_read_brief(const int itime) {
   std::stringstream fname;
   fname << m_filename;
   std::ifstream is(fname.str());
-  // Skip timesteps (each entry is complex (2) and 6 vars)
-  is.ignore(18 * 6 * 2 * vec_size * (itime + 1));
+  // Skip previous timesteps
+  // -- each entry is complex (2) and 6 vars
+  // -- each number takes 18 spaces
+  // -- long long is to avoid overflow
+  is.ignore(18 * 6 * 2 * (long long)(vec_size * (itime + 1)));
   // Check for eof, exit early if not found
   eof_not_found = eof_not_found && !is.eof();
   if (!eof_not_found) {
